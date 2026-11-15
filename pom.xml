@@ -13,9 +13,7 @@
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <minecraft.version>1.21.4</minecraft.version>
-        <loader.version>0.16.9</loader.version>
-        <fabric.version>0.102.0+1.21.4</fabric.version>
+        <fabric.version>0.108.0+1.21.4</fabric.version>
     </properties>
 
     <repositories>
@@ -30,16 +28,15 @@
         <dependency>
             <groupId>net.fabricmc</groupId>
             <artifactId>fabric-loader</artifactId>
-            <version>${loader.version}</version>
-            <scope>provided</scope>
+            <version>0.16.9</version>
         </dependency>
 
-        <!-- Fabric API -->
+        <!-- Fabric API (POM tipi belirtilerek hata önlendi) -->
         <dependency>
             <groupId>net.fabricmc.fabric-api</groupId>
             <artifactId>fabric-api</artifactId>
             <version>${fabric.version}</version>
-            <scope>provided</scope>
+            <type>pom</type>
         </dependency>
     </dependencies>
 
@@ -57,4 +54,5 @@
         </plugins>
     </build>
 </project>
+
 
