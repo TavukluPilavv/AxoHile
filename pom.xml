@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.axohile</groupId>
@@ -13,7 +13,9 @@
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <fabric.version>0.108.0+1.21.4</fabric.version>
+        <minecraft.version>1.21.4</minecraft.version>
+        <loader.version>0.16.9</loader.version>
+        <fabric.version>0.102.0+1.21.4</fabric.version>
     </properties>
 
     <repositories>
@@ -24,15 +26,20 @@
     </repositories>
 
     <dependencies>
+        <!-- Fabric Loader -->
         <dependency>
             <groupId>net.fabricmc</groupId>
             <artifactId>fabric-loader</artifactId>
-            <version>0.16.9</version>
+            <version>${loader.version}</version>
+            <scope>provided</scope>
         </dependency>
+
+        <!-- Fabric API -->
         <dependency>
             <groupId>net.fabricmc.fabric-api</groupId>
             <artifactId>fabric-api</artifactId>
             <version>${fabric.version}</version>
+            <scope>provided</scope>
         </dependency>
     </dependencies>
 
@@ -50,3 +57,4 @@
         </plugins>
     </build>
 </project>
+
