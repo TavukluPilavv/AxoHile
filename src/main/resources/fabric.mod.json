@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "axohile",
+  "version": "${version}",
+  "name": "AxoHile",
+  "description": "A Minecraft 1.21.4 Fabric client mod.",
+  "authors": ["TavukluPilavv"],
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "dev.axohile.AxoHileClient"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.16.9",
+    "minecraft": "1.21.4",
+    "java": ">=21",
+    "fabric-api": "*"
+  }
+}
