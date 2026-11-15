@@ -20,11 +20,10 @@ public class AxoHileClient implements ClientModInitializer {
     public static KeyBinding menuKey;
     public static boolean killauraEnabled = true;
     public static boolean elytraFlightEnabled = true;
-    public static double reach = 4.0; // Polar/Vulcan bypass için optimal mesafe
+    public static double reach = 4.0;
 
     @Override
     public void onInitializeClient() {
-        // Sağ Shift tuşu ile mod durumunu kontrol etme
         menuKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
             "key.axohile.menu",
             InputUtil.Type.KEYSYM,
@@ -50,12 +49,10 @@ public class AxoHileClient implements ClientModInitializer {
         });
     }
 
-    // --- POLAR / VULCAN BYPASS DESTEKLİ GELİŞMİŞ COMBAT (KILLAURA) ---
     private static void runAdvancedCombat(MinecraftClient client) {
         LivingEntity target = null;
         double closestDistance = reach;
 
-        // Çevredeki en avantajlı hedefi seçme
         for (Entity entity : client.world.getEntities()) {
             if (entity instanceof LivingEntity && entity != client.player && entity.isAlive()) {
                 double dist = client.player.distanceTo(entity);
@@ -67,24 +64,20 @@ public class AxoHileClient implements ClientModInitializer {
         }
 
         if (target != null) {
-            // 1. Polar Bypass için Akıllı/Yumuşak Rotasyon (Anında kilitlenmek yerine anti-cheat takibini atlatan delta dönüş)
             aimAtTargetBypass(client.player, target);
 
-            // 2. W Tuşuna basıldığında hedefin arkasını/hareket yönünü takip etme (Movement Lock)
             boolean isWPressed = GLFW.glfwGetKey(client.getWindow().getHandle(), GLFW.GLFW_KEY_W) == GLFW.GLFW_PRESS;
             if (isWPressed) {
                 trackTargetMovement(client.player, target);
             }
 
-            // 3. Auto-Axe (Hedef kalkan açtığı an envanterden baltayı seçip kalkanı kırma)
             handleShieldBreaker(client, target);
 
-            // 4. Auto-Crit (Düşüş/zıplama döngüsü ile sürekli kritik vuruş)
-            if (client.player.isOnGround() && !client.player.isFallFlying() && !client.player.isSubmergedInWater() && client.player.hurtTime == 0) {
+            // Auto-Crit (Düzeltildi: isFallFlying kaldırıldı, güvenli zıplama döngüsü eklendi)
+            if (client.player.isOnGround() && !client.player.isSubmergedInWater() && client.player.hurtTime == 0) {
                 client.player.jump();
             }
 
-            // 5. Cooldown Kontrollü Meşru Vuruş (Anti-Cheat attack rate korumalarını aşmak için)
             if (client.player.getAttackCooldownProgress(0.5f) >= 0.92f) {
                 client.interactionManager.attackEntity(client.player, target);
                 client.player.swingHand(Hand.MAIN_HAND);
@@ -92,10 +85,8 @@ public class AxoHileClient implements ClientModInitializer {
         }
     }
 
-    // Anti-cheat rotation check'lerine (Polar Aim/Angle) takılmamak için optimize edilmiş rotasyon
     private static void aimAtTargetBypass(PlayerEntity player, LivingEntity target) {
         Vec3d eyes = player.getEyePos();
-        // Hedefin tam merkezine veya gövdesine odaklanma
         Vec3d targetPos = target.getPos().add(0, target.getHeight() * 0.5, 0);
 
         double diffX = targetPos.x - eyes.x;
@@ -107,7 +98,6 @@ public class AxoHileClient implements ClientModInitializer {
         float targetYaw = (float) (Math.atan2(diffZ, diffX) * (180 / Math.PI)) - 90.0F;
         float targetPitch = (float) -(Math.atan2(diffY, dist) * (180 / Math.PI));
 
-        // Ani snap yasaklayan anti-cheatler için yumuşatma (Interpolation) katsayısı
         float yawDelta = wrapDegrees(targetYaw - player.getYaw());
         float pitchDelta = targetPitch - player.getPitch();
 
@@ -115,20 +105,15 @@ public class AxoHileClient implements ClientModInitializer {
         player.setPitch(player.getPitch() + pitchDelta * 0.75f);
     }
 
-    // W tuşuna basıldığında hedefi takip etme ve arkasında konumlanma mantığı
     private static void trackTargetMovement(PlayerEntity player, LivingEntity target) {
         Vec3d targetPos = target.getPos();
         Vec3d playerPos = player.getPos();
-        
-        // Hedefin hareket yönüne göre rotayı kitle
         double diffX = targetPos.x - playerPos.x;
         double diffZ = targetPos.z - playerPos.z;
         float targetYaw = (float) (Math.atan2(diffZ, diffX) * (180 / Math.PI)) - 90.0F;
-        
         player.setYaw(targetYaw);
     }
 
-    // Kalkan kıran mekanizma
     private static void handleShieldBreaker(MinecraftClient client, LivingEntity target) {
         if (target.isUsingItem() && target.getActiveItem().isOf(Items.SHIELD)) {
             for (int i = 0; i < 9; i++) {
@@ -147,7 +132,6 @@ public class AxoHileClient implements ClientModInitializer {
         return value;
     }
 
-    // --- ELYTRA HEDEF TAKİBİ VE OTOMATİK FİŞEK ---
     private static void runElytraFlight(MinecraftClient client) {
         Entity target = null;
         double closestDist = Double.MAX_VALUE;
@@ -162,11 +146,12 @@ public class AxoHileClient implements ClientModInitializer {
             }
         }
 
-        if (target != null && (client.player.isFallFlying() || client.player.fallDistance > 2.0f)) {
+        if (target != null && client.player.fallDistance > 2.0f) {
             aimAtTargetBypass(client.player, (LivingEntity) target);
         }
 
-        if (client.player.isFallFlying() && client.player.age % 20 == 0) {
+        // Düzeltildi: isFallFlying yerine düşüş ve havada olma kontrolü kullanıldı
+        if (!client.player.isOnGround() && client.player.fallDistance > 1.0f && client.player.age % 20 == 0) {
             useFirework(client);
         }
     }
@@ -200,4 +185,3 @@ public class AxoHileClient implements ClientModInitializer {
         }
     }
 }
-
