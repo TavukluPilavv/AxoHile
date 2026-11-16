@@ -263,7 +263,7 @@ public class AxoHileClient implements ClientModInitializer {
         }
     }
 
-    // --- COOLDOWN VE ZIPLAMA SENKRONİZELİ KUSURSUZ FULL HIT SİSTEMİ ---
+    // --- COOLDOWN VE ZIPLAMA %100 SENKRONİZE KUSURSUZ FULL HIT SİSTEMİ ---
     private static void runAdvancedCombat(MinecraftClient client) {
         if (client.player == null || client.interactionManager == null) return;
 
@@ -276,7 +276,7 @@ public class AxoHileClient implements ClientModInitializer {
                 trackTargetMovement(client.player, target);
             }
 
-            // Kalkan Kırma & Balta Yönetimi (Sadece slot seçer, ikinci bir saldırı yapmaz)
+            // Kalkan Kırma & Balta Yönetimi (Sadece slot seçer, vuruş yapmaz)
             boolean targetIsBlocking = target.isUsingItem() && target.getActiveItem().isOf(Items.SHIELD);
             if (targetIsBlocking && shieldBreakerAxeMode) {
                 for (int i = 0; i < 9; i++) {
@@ -294,28 +294,19 @@ public class AxoHileClient implements ClientModInitializer {
 
             // Full Hit ve Cooldown Mantığı
             if (fullHitEnabled) {
-                // Cooldown dolmak üzereyken (>= 0.8f) ve yerdeysek zıpla ki düşerken cooldown tam 0.98f olsun!
-                if (client.player.isOnGround() && client.player.getAttackCooldownProgress(0.5f) >= 0.8f) {
+                // ŞARTI DÜZELTTİK: Sadece yerdeyken VE kılıç/silahın cooldown'ı tamamen dolduğunda (>= 0.98f) zıpla!
+                if (client.player.isOnGround() && client.player.getAttackCooldownProgress(0.5f) >= 0.98f) {
                     client.player.jump();
-                } else {
-                    // Havadayken: Kesin düşüş kontrolü, tüm Minecraft crit şartları ve tam dolmuş cooldown (>= 0.98f)
-                    boolean isStrictCritReady = !client.player.isOnGround()
-                            && client.player.fallDistance > 0.0f
-                            && client.player.getVelocity().y < -0.01
-                            && !client.player.isClimbing()
-                            && !client.player.isTouchingWater()
-                            && !client.player.hasVehicle()
-                            && !client.player.hasStatusEffect(net.minecraft.entity.effect.StatusEffects.BLINDNESS);
-
-                    if (isStrictCritReady && client.player.getAttackCooldownProgress(0.5f) >= 0.98f) {
-                        client.player.setSprinting(false);
-                        client.interactionManager.attackEntity(client.player, target);
-                        client.player.swingHand(Hand.MAIN_HAND);
-                        restorePreviousItem(client);
-                    }
+                } 
+                // Havadayken (düşüşe geçtiğinde) ve cooldown hala doluyken kritik vuruşu gerçekleştir
+                else if (!client.player.isOnGround() && client.player.fallDistance > 0.0f && client.player.getAttackCooldownProgress(0.5f) >= 0.98f) {
+                    client.player.setSprinting(false);
+                    client.interactionManager.attackEntity(client.player, target);
+                    client.player.swingHand(Hand.MAIN_HAND);
+                    restorePreviousItem(client);
                 }
             } else {
-                // Full Hit Kapalıyken: Normal yerde cooldown tam dolduğunda (>= 0.98f) düz vurur, asla spam yapmaz
+                // Full Hit Kapalıyken: Normal yerde/havada cooldown dolduğunda düz vurur, asla spam yapmaz
                 if (client.player.getAttackCooldownProgress(0.5f) >= 0.98f) {
                     client.interactionManager.attackEntity(client.player, target);
                     client.player.swingHand(Hand.MAIN_HAND);
