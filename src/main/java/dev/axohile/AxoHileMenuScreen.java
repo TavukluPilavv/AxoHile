@@ -20,7 +20,7 @@ public class AxoHileMenuScreen extends Screen {
 
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
-        // Arka planı tamamen siyah/koyu tema yapıyoruz (Videodaki gibi)
+        // Arka planı tamamen siyah/koyu tema yapıyoruz
         context.fill(this.width / 2 - 160, this.height / 2 - 110, this.width / 2 + 160, this.height / 2 + 110, 0xF0101010);
         
         // Sol Kategori Paneli
@@ -112,7 +112,6 @@ public class AxoHileMenuScreen extends Screen {
         if (subMenuOpen && mouseX >= centerX - 40 && mouseX <= centerX + 120 && mouseY >= centerY - 30 && mouseY <= centerY + 70) {
             if (activeSubMenuModule.equals("AttackAura")) {
                 if (mouseY >= centerY + 0 && mouseY <= centerY + 15) {
-                    // Bypass türlerini döndür: Vulcan -> Grim -> Polar -> Fun
                     if (AxoHileClient.attackBypassType.equals("Vulcan")) AxoHileClient.attackBypassType = "Grim";
                     else if (AxoHileClient.attackBypassType.equals("Grim")) AxoHileClient.attackBypassType = "Polar";
                     else if (AxoHileClient.attackBypassType.equals("Polar")) AxoHileClient.attackBypassType = "Fun";
@@ -124,9 +123,10 @@ public class AxoHileMenuScreen extends Screen {
                 }
             } else if (activeSubMenuModule.equals("ElytraTarget")) {
                 if (mouseY >= centerY + 0 && mouseY <= centerY + 15) {
+                    // DÜZELTME BURADA YAPILDI (Eksik olan else if eklendi)
                     if (AxoHileClient.elytraBypassType.equals("Vulcan")) AxoHileClient.elytraBypassType = "Grim";
                     else if (AxoHileClient.elytraBypassType.equals("Grim")) AxoHileClient.elytraBypassType = "Polar";
-                    else AxoHileClient.elytraBypassType = "Fun";
+                    else if (AxoHileClient.elytraBypassType.equals("Polar")) AxoHileClient.elytraBypassType = "Fun";
                     else AxoHileClient.elytraBypassType = "Vulcan";
                 } else if (mouseY >= centerY + 15 && mouseY <= centerY + 30) {
                     AxoHileClient.autoFireworkSpeed = AxoHileClient.autoFireworkSpeed >= 10 ? 1 : AxoHileClient.autoFireworkSpeed + 1;
