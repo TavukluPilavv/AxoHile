@@ -12,11 +12,15 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.AxeItem;
+import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
 import net.minecraft.screen.slot.SlotActionType;
 import net.minecraft.util.Hand;
 import net.minecraft.util.math.Vec3d;
 import org.lwjgl.glfw.GLFW;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class AxoHileClient implements ClientModInitializer {
     public static KeyBinding menuKey;
@@ -41,7 +45,9 @@ public class AxoHileClient implements ClientModInitializer {
     public static int autoFireworkSpeed = 5;              
 
     // --- AUTOTOTEM AYARLARI ---
-    public static int autoTotemHealth = 4; // 2 kalp (4 can)
+    public static int autoTotemHealth = 4; // 2 kalp
+    private static ItemStack savedOffhandStack = ItemStack.EMPTY;
+    private static boolean restoredOffhand = true;
 
     // --- TEMA ---
     public static int themeColor = 0xFF5555FF;
@@ -53,14 +59,19 @@ public class AxoHileClient implements ClientModInitializer {
     public static boolean hudMainMenu = false;
     public static boolean hudTargetHud = false;
 
-    // Sürüklenebilir HUD koordinatları ve fare kontrolü
     public static int hudX = 15;
     public static int hudY = 15;
     private static boolean isDraggingHud = false;
     private static int dragOffsetX = 0;
     private static int dragOffsetY = 0;
 
+    // --- ACCOUNTS ---
+    public static List<String> accountList = new ArrayList<>();
+    public static String selectedAccount = "";
+    public static String typedAccountInput = "";
+
     private static int previousSlot = -1;                 
+    private static int welcomeTimer = 0;
 
     @Override
     public void onInitializeClient() {
@@ -88,32 +99,36 @@ public class AxoHileClient implements ClientModInitializer {
             }
 
             if (client.player != null && client.world != null) {
-                // AutoTotem Kontrolü
+                if (welcomeTimer < 100) welcomeTimer++;
+
                 if (autoTotemEnabled) {
                     runAutoTotem(client);
                 }
-                // ElytraTarget Bağımsız Oto Fişek Basma
                 if (elytraFlightEnabled) {
                     runElytraFlight(client);
                 }
-                // AttackAura
                 if (killauraEnabled) {
                     runAdvancedCombat(client);
                 }
             }
         });
 
-        // HUD Render & Sol Tık İle Sürükleme Mantığı & Saniyeli İksirler & TargetHUD
         HudRenderCallback.EVENT.register((context, tickDelta) -> {
             MinecraftClient client = MinecraftClient.getInstance();
             if (client.player == null || client.options.hudHidden) return;
 
-            // Sol tık basılı iken HUD sürükleme kontrolü (Chat açıkken veya ekranda)
+            // Welcome Splash Text on Join
+            if (welcomeTimer < 80) {
+                int sw = client.getWindow().getScaledWidth();
+                int sh = client.getWindow().getScaledHeight();
+                context.drawCenteredTextWithShadow(client.textRenderer, "§b§lVexionClient", sw / 2, sh / 2 - 30, 0xFFFFFF);
+            }
+
             boolean isLeftMousePressed = GLFW.glfwGetKey(client.getWindow().getHandle(), GLFW.GLFW_MOUSE_BUTTON_LEFT) == GLFW.GLFW_PRESS;
             double mouseX = client.mouse.getX() * (double)client.getWindow().getScaledWidth() / (double)client.getWindow().getWidth();
             double mouseY = client.mouse.getY() * (double)client.getWindow().getScaledHeight() / (double)client.getWindow().getHeight();
 
-            if (isLeftMousePressed) {
+            if (isLeftMousePressed && client.currentScreen == null) {
                 if (!isDraggingHud) {
                     if (mouseX >= hudX && mouseX <= hudX + 160 && mouseY >= hudY && mouseY <= hudY + 120) {
                         isDraggingHud = true;
@@ -131,51 +146,46 @@ public class AxoHileClient implements ClientModInitializer {
             int x = hudX;
             int y = hudY;
 
-            // 1. Ana Menü HUD (VexionClient, İsim, FPS, MS, Local)
             if (hudMainMenu) {
                 int fps = client.getCurrentFps();
                 String playerName = client.player.getName().getString();
-                context.fill(x, y, x + 150, y + 36, 0x90000000);
-                context.drawTextWithShadow(client.textRenderer, "⭐ VexionClient §7| §f" + playerName, x + 6, y + 6, 0xFFFFFF);
-                context.drawTextWithShadow(client.textRenderer, "🟢 FPS: §f" + fps + " §7| 🏓 12ms §7| 🌍 local", x + 6, y + 21, 0xFFFFFF);
-                y += 42;
+                context.fill(x, y, x + 160, y + 38, 0x90000000);
+                context.drawTextWithShadow(client.textRenderer, "👤 VexionClient §7| §f" + playerName, x + 6, y + 6, 0xFFFFFF);
+                context.drawTextWithShadow(client.textRenderer, "🖥️ " + fps + " FPS §7| 📶 12ms §7| 🌍 local", x + 6, y + 22, 0xFFFFFF);
+                y += 44;
             }
 
-            // 2. Keybinds HUD (Klavye Simgeli)
             boolean hasKeybinds = (killauraEnabled && attackAuraKey != -1) || (elytraFlightEnabled && elytraKey != -1);
             if (hudKeybinds && hasKeybinds) {
-                context.fill(x, y, x + 150, y + 45, 0x90000000);
+                context.fill(x, y, x + 160, y + 45, 0x90000000);
                 context.drawTextWithShadow(client.textRenderer, "⌨️ Keybinds", x + 6, y + 6, 0xFFAAAAAA);
                 int kbY = y + 20;
                 if (killauraEnabled && attackAuraKey != -1) {
                     context.drawTextWithShadow(client.textRenderer, "§fAttackAura", x + 10, kbY, 0xFFFFFF);
-                    context.drawTextWithShadow(client.textRenderer, "[" + GLFW.glfwGetKeyName(attackAuraKey, 0) + "]", x + 100, kbY, 0x55FF55);
+                    context.drawTextWithShadow(client.textRenderer, "[" + GLFW.glfwGetKeyName(attackAuraKey, 0) + "]", x + 110, kbY, 0x55FF55);
                     kbY += 14;
                 }
                 if (elytraFlightEnabled && elytraKey != -1) {
                     context.drawTextWithShadow(client.textRenderer, "§fElytraTarget", x + 10, kbY, 0xFFFFFF);
-                    context.drawTextWithShadow(client.textRenderer, "[" + GLFW.glfwGetKeyName(elytraKey, 0) + "]", x + 100, kbY, 0x55FF55);
+                    context.drawTextWithShadow(client.textRenderer, "[" + GLFW.glfwGetKeyName(elytraKey, 0) + "]", x + 110, kbY, 0x55FF55);
                 }
                 y += 50;
             }
 
-            // 3. Staff List HUD
             if (hudStaffList) {
-                context.fill(x, y, x + 150, y + 30, 0x90000000);
+                context.fill(x, y, x + 160, y + 30, 0x90000000);
                 context.drawTextWithShadow(client.textRenderer, "📋 Staff List (0 aktif)", x + 6, y + 8, 0xFFAAAAAA);
                 y += 36;
             }
 
-            // 4. Potions HUD (Dakika ve Saniye İksir Süresi Gösterimi)
             if (hudPotions && !client.player.getStatusEffects().isEmpty()) {
                 int potHeight = 25 + (client.player.getStatusEffects().size() * 15);
-                context.fill(x, y, x + 150, y + potHeight, 0x90000000);
+                context.fill(x, y, x + 160, y + potHeight, 0x90000000);
                 context.drawTextWithShadow(client.textRenderer, "🧪 Aktif İksirler", x + 6, y + 6, 0xFFAAAAAA);
                 int pY = y + 20;
                 for (net.minecraft.entity.effect.StatusEffectInstance effect : client.player.getStatusEffects()) {
                     String name = effect.getEffectType().value().getName().getString();
-                    int durationTicks = effect.getDuration();
-                    int totalSeconds = durationTicks / 20;
+                    int totalSeconds = effect.getDuration() / 20;
                     int minutes = totalSeconds / 60;
                     int seconds = totalSeconds % 60;
                     String timeFormatted = String.format("%d:%02d", minutes, seconds);
@@ -185,7 +195,6 @@ public class AxoHileClient implements ClientModInitializer {
                 y += potHeight + 6;
             }
 
-            // 5. TargetHUD (Hedef Adı, Can ve Sağlık Barı)
             if (hudTargetHud) {
                 LivingEntity target = getBestTarget(client, 8.0);
                 if (target != null) {
@@ -209,7 +218,6 @@ public class AxoHileClient implements ClientModInitializer {
             }
         });
 
-        // Sarsıntısız Kamera & Hit Göstergesi
         WorldRenderEvents.LAST.register(context -> {
             MinecraftClient client = MinecraftClient.getInstance();
             if (client.player != null && client.world != null && killauraEnabled) {
@@ -224,14 +232,28 @@ public class AxoHileClient implements ClientModInitializer {
 
     private static void runAutoTotem(MinecraftClient client) {
         if (client.player == null || client.interactionManager == null) return;
-        // Can eşiği altına düşünce offhand'e totem basma
+        
         if (client.player.getHealth() <= autoTotemHealth) {
             if (!client.player.getOffHandStack().isOf(Items.TOTEM_OF_UNDYING)) {
+                savedOffhandStack = client.player.getOffHandStack().copy();
+                restoredOffhand = false;
                 for (int i = 0; i < 36; i++) {
                     if (client.player.getInventory().getStack(i).isOf(Items.TOTEM_OF_UNDYING)) {
                         client.interactionManager.clickSlot(client.player.playerScreenHandler.syncId, i < 9 ? i + 36 : i, 0, SlotActionType.PICKUP, client.player);
                         client.interactionManager.clickSlot(client.player.playerScreenHandler.syncId, 45, 0, SlotActionType.PICKUP, client.player);
                         client.interactionManager.clickSlot(client.player.playerScreenHandler.syncId, i < 9 ? i + 36 : i, 0, SlotActionType.PICKUP, client.player);
+                        break;
+                    }
+                }
+            }
+        } else {
+            if (!restoredOffhand && !savedOffhandStack.isEmpty()) {
+                for (int i = 0; i < 36; i++) {
+                    if (client.player.getInventory().getStack(i).isEmpty()) {
+                        client.interactionManager.clickSlot(client.player.playerScreenHandler.syncId, 45, 0, SlotActionType.PICKUP, client.player);
+                        client.interactionManager.clickSlot(client.player.playerScreenHandler.syncId, i < 9 ? i + 36 : i, 0, SlotActionType.PICKUP, client.player);
+                        restoredOffhand = true;
+                        savedOffhandStack = ItemStack.EMPTY;
                         break;
                     }
                 }
@@ -251,16 +273,14 @@ public class AxoHileClient implements ClientModInitializer {
 
             handleShieldBreakerAndAttack(client, target);
 
-            // Full Hit Mantığı: Açıkken sadece zıplayıp düşerken vuruş yapar. Kapalıyken normal seri vuruş yapar.
-            if (fullHitEnabled) {
-                if (!client.player.isOnGround() && client.player.fallDistance > 0.0f) {
-                    if (client.player.getAttackCooldownProgress(0.5f) >= 0.92f) {
+            // Cooldown kuralı: Kesinlikle cooldown dolmadan vurmaz, spam yapmaz.
+            if (client.player.getAttackCooldownProgress(0.5f) >= 0.95f) {
+                if (fullHitEnabled) {
+                    if (!client.player.isOnGround() && client.player.fallDistance > 0.0f) {
                         client.interactionManager.attackEntity(client.player, target);
                         client.player.swingHand(Hand.MAIN_HAND);
                     }
-                }
-            } else {
-                if (client.player.getAttackCooldownProgress(0.5f) >= 0.92f) {
+                } else {
                     client.interactionManager.attackEntity(client.player, target);
                     client.player.swingHand(Hand.MAIN_HAND);
                 }
@@ -292,23 +312,24 @@ public class AxoHileClient implements ClientModInitializer {
 
         if (targetIsBlocking) {
             if (shieldBreakerAxeMode) {
-                // Balta ile kalkan kırma ve anında vuruş
                 for (int i = 0; i < 9; i++) {
                     if (client.player.getInventory().getStack(i).getItem() instanceof AxeItem) {
                         if (previousSlot == -1 && !(client.player.getInventory().getMainHandStack().getItem() instanceof AxeItem)) {
                             previousSlot = client.player.getInventory().selectedSlot;
                         }
                         client.player.getInventory().selectedSlot = i;
-                        // Baltaya geçer geçmez anında vur ve kalkanı kır
-                        client.interactionManager.attackEntity(client.player, target);
-                        client.player.swingHand(Hand.MAIN_HAND);
+                        if (client.player.getAttackCooldownProgress(0.5f) >= 0.95f) {
+                            client.interactionManager.attackEntity(client.player, target);
+                            client.player.swingHand(Hand.MAIN_HAND);
+                        }
                         return;
                     }
                 }
             } else {
-                // Balta modu kapalı: Mevcut kılıç ile kalkanı kırmaya çalış ve vur
-                client.interactionManager.attackEntity(client.player, target);
-                client.player.swingHand(Hand.MAIN_HAND);
+                if (client.player.getAttackCooldownProgress(0.5f) >= 0.95f) {
+                    client.interactionManager.attackEntity(client.player, target);
+                    client.player.swingHand(Hand.MAIN_HAND);
+                }
                 restorePreviousItem(client);
             }
         } else {
@@ -343,7 +364,6 @@ public class AxoHileClient implements ClientModInitializer {
             aimAtTargetSmooth(client.player, (LivingEntity) target, elytraBypassType);
         }
 
-        // ElytraTarget tek başına açıkken envanterden fişek bulup hıza göre otomatik basar
         int tickInterval = Math.max(2, 22 - (autoFireworkSpeed * 2)); 
         if (isGlidingSafely && client.player.age % tickInterval == 0) {
             useFirework(client);
@@ -395,8 +415,8 @@ public class AxoHileClient implements ClientModInitializer {
         float yawDelta = wrapDegrees(targetYaw - player.getYaw());
         float pitchDelta = targetPitch - player.getPitch();
 
-        // Sarsıntısız kamera (View-Lock / Smooth Rotation)
-        float smoothing = bypass.equals("Grim") ? 0.30f : 0.60f;
+        // Sarsıntısız ve serbest bakışa izin veren yumuşak açı takibi
+        float smoothing = bypass.equals("Grim") ? 0.25f : 0.50f;
 
         player.setYaw(player.getYaw() + yawDelta * smoothing);
         player.setPitch(player.getPitch() + pitchDelta * smoothing);
@@ -418,3 +438,4 @@ public class AxoHileClient implements ClientModInitializer {
         return value;
     }
 }
+
