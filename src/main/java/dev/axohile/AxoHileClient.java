@@ -114,7 +114,7 @@ public class AxoHileClient implements ClientModInitializer {
             }
         });
 
-        // HUD Render & Shift + Sol Tık ile Sürükleme Mantığı
+        // HUD Render & Shift + Sol Tık ile Sürükleme Mantığı (GLFW Shift Düzeltmesi Yapıldı)
         HudRenderCallback.EVENT.register((context, tickDelta) -> {
             MinecraftClient client = MinecraftClient.getInstance();
             if (client.player == null || client.options.hudHidden) return;
@@ -126,7 +126,7 @@ public class AxoHileClient implements ClientModInitializer {
                 context.drawCenteredTextWithShadow(client.textRenderer, "§b§lVexionClient", sw / 2, sh / 2 - 30, 0xFFFFFF);
             }
 
-            boolean isShiftPressed = Screen.hasShiftDown();
+            boolean isShiftPressed = GLFW.glfwGetKey(client.getWindow().getHandle(), GLFW.GLFW_KEY_LEFT_SHIFT) == GLFW.GLFW_PRESS || GLFW.glfwGetKey(client.getWindow().getHandle(), GLFW.GLFW_KEY_RIGHT_SHIFT) == GLFW.GLFW_PRESS;
             boolean isLeftMousePressed = GLFW.glfwGetKey(client.getWindow().getHandle(), GLFW.GLFW_MOUSE_BUTTON_LEFT) == GLFW.GLFW_PRESS;
             double mouseX = client.mouse.getX() * (double)client.getWindow().getScaledWidth() / (double)client.getWindow().getWidth();
             double mouseY = client.mouse.getY() * (double)client.getWindow().getScaledHeight() / (double)client.getWindow().getHeight();
@@ -273,7 +273,6 @@ public class AxoHileClient implements ClientModInitializer {
     private static void runAdvancedCombat(MinecraftClient client) {
         LivingEntity target = getBestTarget(client, reach);
         if (target != null) {
-            // Sarsıntısız ve serbest bakışa izin veren yumuşak açı takibi
             aimAtTargetSmooth(client.player, target, attackBypassType);
 
             boolean isWPressed = GLFW.glfwGetKey(client.getWindow().getHandle(), GLFW.GLFW_KEY_W) == GLFW.GLFW_PRESS;
@@ -283,7 +282,6 @@ public class AxoHileClient implements ClientModInitializer {
 
             handleShieldBreakerAndAttack(client, target);
 
-            // KESİN COOLDOWN KURALI: Asla spam atmaz, tam dolumda vurur.
             if (client.player.getAttackCooldownProgress(0.5f) >= 0.98f) {
                 if (fullHitEnabled) {
                     if (!client.player.isOnGround() && client.player.fallDistance > 0.0f) {
@@ -336,7 +334,6 @@ public class AxoHileClient implements ClientModInitializer {
                     }
                 }
             } else {
-                // Balta kapalıysa kılıçla kalkanı kırıp vurur
                 if (client.player.getAttackCooldownProgress(0.5f) >= 0.98f) {
                     client.interactionManager.attackEntity(client.player, target);
                     client.player.swingHand(Hand.MAIN_HAND);
@@ -426,7 +423,6 @@ public class AxoHileClient implements ClientModInitializer {
         float yawDelta = wrapDegrees(targetYaw - player.getYaw());
         float pitchDelta = targetPitch - player.getPitch();
 
-        // Sarsıntısız ve serbest bakışa izin veren esnek sönümleme
         float smoothing = bypass.equals("Grim") ? 0.20f : 0.40f;
 
         player.setYaw(player.getYaw() + yawDelta * smoothing);
