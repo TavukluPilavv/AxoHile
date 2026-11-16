@@ -156,13 +156,14 @@ public class AxoHileClient implements ClientModInitializer {
             }
         }
 
-        if (target != null && client.player.fallFlying()) {
+        // HATA DÜZELTMESİ BURADA YAPILDI: fallFlying() yerine isFallFlying() kullanıldı
+        if (target != null && client.player.isFallFlying()) {
             aimAtTargetBypass(client.player, (LivingEntity) target);
         }
 
         // Oto Fişek Hız Ayarı (1 ile 10 arası scale edilir, 1 yavaş, 10 çok seri basar)
         int tickInterval = Math.max(2, 22 - (autoFireworkSpeed * 2)); 
-        if (client.player.fallFlying() && client.player.age % tickInterval == 0) {
+        if (client.player.isFallFlying() && client.player.age % tickInterval == 0) {
             useFirework(client);
         }
     }
