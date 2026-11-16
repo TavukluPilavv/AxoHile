@@ -27,10 +27,8 @@ public class AxoHileMenuScreen extends Screen {
         // Bulanıklık YOK, net koyu arkaplan
         context.fill(0, 0, this.width, this.height, 0x80000000);
 
-        // Ana Menü Çerçevesi
         context.fill(this.width / 2 - 180, this.height / 2 - 120, this.width / 2 + 180, this.height / 2 + 120, 0xF0101010);
         
-        // Sol Kategori Paneli
         context.fill(this.width / 2 - 180, this.height / 2 - 120, this.width / 2 - 95, this.height / 2 + 120, 0xF0181818);
         context.drawTextWithShadow(this.textRenderer, "§bVexionClient", this.width / 2 - 170, this.height / 2 - 105, 0xFFFFFF);
 
@@ -308,3 +306,4 @@ public class AxoHileMenuScreen extends Screen {
         return false;
     }
 }
+
