@@ -23,14 +23,11 @@ public class AxoHileMenuScreen extends Screen {
 
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
-        // Siyah arka plan
         context.fill(this.width / 2 - 180, this.height / 2 - 120, this.width / 2 + 180, this.height / 2 + 120, 0xF0101010);
         
-        // Sol Kategori Paneli
         context.fill(this.width / 2 - 180, this.height / 2 - 120, this.width / 2 - 95, this.height / 2 + 120, 0xF0181818);
         context.drawTextWithShadow(this.textRenderer, "§bVexionClient", this.width / 2 - 170, this.height / 2 - 105, 0xFFFFFF);
 
-        // Kategoriler
         String[] categories = {"Combat", "Move", "Render", "Player", "Themes"};
         int catY = this.height / 2 - 70;
         for (String cat : categories) {
@@ -43,11 +40,9 @@ public class AxoHileMenuScreen extends Screen {
         int startX = this.width / 2 - 85;
         int startY = this.height / 2 - 105;
 
-        // Sağ İçerik
         if (selectedCategory.equals("Combat")) {
             context.drawTextWithShadow(this.textRenderer, "§e[Combat Modülleri]", startX, startY, 0xFFFFFF);
 
-            // AttackAura Kutusu
             int auraColor = AxoHileClient.killauraEnabled ? AxoHileClient.themeColor : 0xFFFFFFFF;
             context.fill(startX, startY + 15, startX + 250, startY + 45, 0x80202020);
             context.drawTextWithShadow(this.textRenderer, "⚔️ AttackAura", startX + 10, startY + 23, auraColor);
