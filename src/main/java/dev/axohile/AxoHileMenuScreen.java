@@ -7,8 +7,8 @@ import org.lwjgl.glfw.GLFW;
 
 public class AxoHileMenuScreen extends Screen {
     private String selectedCategory = "Combat";
-    private boolean subMenuOpen = false;
-    private String activeSubMenuModule = "";
+    private boolean attackAuraSubMenu = false;
+    private boolean elytraTargetSubMenu = false;
     private boolean awaitingKeyBind = false;
     private String moduleToBind = "";
 
@@ -27,7 +27,7 @@ public class AxoHileMenuScreen extends Screen {
         context.fill(this.width / 2 - 180, this.height / 2 - 120, this.width / 2 + 180, this.height / 2 + 120, 0xF0101010);
         
         // Sol Kategori Paneli
-        context.fill(this.width / 2 - 180, this.height / 2 - 120, this.width / 2 - 100, this.height / 2 + 120, 0xF0181818);
+        context.fill(this.width / 2 - 180, this.height / 2 - 120, this.width / 2 - 95, this.height / 2 + 120, 0xF0181818);
         context.drawTextWithShadow(this.textRenderer, "§bVexionClient", this.width / 2 - 170, this.height / 2 - 105, 0xFFFFFF);
 
         // Kategoriler
@@ -35,57 +35,80 @@ public class AxoHileMenuScreen extends Screen {
         int catY = this.height / 2 - 70;
         for (String cat : categories) {
             boolean isSelected = selectedCategory.equals(cat);
-            int color = isSelected ? 0x5555FFFF : 0xFFFFFF;
+            int color = isSelected ? AxoHileClient.themeColor : 0xFFFFFF;
             context.drawTextWithShadow(this.textRenderer, (isSelected ? "> " : "  ") + cat, this.width / 2 - 170, catY, color);
             catY += 22;
         }
 
-        // Sağ Taraf - İçerik
+        int startX = this.width / 2 - 85;
+        int startY = this.height / 2 - 105;
+
+        // Sağ İçerik
         if (selectedCategory.equals("Combat")) {
-            context.drawTextWithShadow(this.textRenderer, "§e[Combat Modülleri]", this.width / 2 - 85, this.height / 2 - 105, 0xFFFFFF);
+            context.drawTextWithShadow(this.textRenderer, "§e[Combat Modülleri]", startX, startY, 0xFFFFFF);
 
-            // AttackAura
-            String auraStatus = AxoHileClient.killauraEnabled ? "§a[AÇIK]" : "§c[KAPALI]";
-            context.drawTextWithShadow(this.textRenderer, "AttackAura " + auraStatus, this.width / 2 - 85, this.height / 2 - 70, 0xFFFFFF);
-            context.drawTextWithShadow(this.textRenderer, "§7(Sağ tık: Ayarlar | Orta tık: Tuş Ata)", this.width / 2 - 85, this.height / 2 - 58, 0x888888);
+            // AttackAura Kutusu
+            int auraColor = AxoHileClient.killauraEnabled ? AxoHileClient.themeColor : 0xFFFFFFFF;
+            context.fill(startX, startY + 15, startX + 250, startY + 45, 0x80202020);
+            context.drawTextWithShadow(this.textRenderer, "⚔️ AttackAura", startX + 10, startY + 23, auraColor);
+            context.drawTextWithShadow(this.textRenderer, AxoHileClient.killauraEnabled ? "AÇIK" : "KAPALI", startX + 200, startY + 23, auraColor);
 
-            // ElytraTarget
-            String elytraStatus = AxoHileClient.elytraFlightEnabled ? "§a[AÇIK]" : "§c[KAPALI]";
-            context.drawTextWithShadow(this.textRenderer, "ElytraTarget " + elytraStatus, this.width / 2 - 85, this.height / 2 - 25, 0xFFFFFF);
-            context.drawTextWithShadow(this.textRenderer, "§7(Sağ tık: Ayarlar | Orta tık: Tuş Ata)", this.width / 2 - 85, this.height / 2 - 13, 0x888888);
+            if (attackAuraSubMenu) {
+                context.fill(startX, startY + 47, startX + 250, startY + 115, 0x90151515);
+                context.drawTextWithShadow(this.textRenderer, "Bypass: " + AxoHileClient.attackBypassType, startX + 15, startY + 55, 0xCCCCCC);
+                context.drawTextWithShadow(this.textRenderer, "Full Hit: " + (AxoHileClient.fullHitEnabled ? "Zıplama Bekler" : "Normal"), startX + 15, startY + 75, 0xCCCCCC);
+                context.drawTextWithShadow(this.textRenderer, "Balta Kalkan: " + (AxoHileClient.shieldBreakerAxeMode ? "Açık" : "Kapalı"), startX + 15, startY + 95, 0xCCCCCC);
+            }
+
+            int elytraBoxY = attackAuraSubMenu ? startY + 125 : startY + 55;
+            int elytraColor = AxoHileClient.elytraFlightEnabled ? AxoHileClient.themeColor : 0xFFFFFFFF;
+            context.fill(startX, elytraBoxY, startX + 250, elytraBoxY + 30, 0x80202020);
+            context.drawTextWithShadow(this.textRenderer, "🦅 ElytraTarget", startX + 10, elytraBoxY + 8, elytraColor);
+            context.drawTextWithShadow(this.textRenderer, AxoHileClient.elytraFlightEnabled ? "AÇIK" : "KAPALI", startX + 200, elytraBoxY + 8, elytraColor);
+
+            if (elytraTargetSubMenu) {
+                context.fill(startX, elytraBoxY + 32, startX + 250, elytraBoxY + 85, 0x90151515);
+                context.drawTextWithShadow(this.textRenderer, "Bypass: " + AxoHileClient.elytraBypassType, startX + 15, elytraBoxY + 40, 0xCCCCCC);
+                context.drawTextWithShadow(this.textRenderer, "Oto Fişek Hızı: " + AxoHileClient.autoFireworkSpeed + "/10", startX + 15, elytraBoxY + 60, 0xCCCCCC);
+            }
         } 
         else if (selectedCategory.equals("Render")) {
-            context.drawTextWithShadow(this.textRenderer, "§e[Render / HUD Bileşenleri]", this.width / 2 - 85, this.height / 2 - 105, 0xFFFFFF);
-            context.drawTextWithShadow(this.textRenderer, "HUD Öğeleri (Sağ tık ile yönet)", this.width / 2 - 85, this.height / 2 - 70, 0xFFFFFF);
-            context.drawTextWithShadow(this.textRenderer, "📋 Staff List  " + (AxoHileClient.hudStaffList ? "§a[AÇIK]" : "§c[KAPALI]"), this.width / 2 - 85, this.height / 2 - 45, 0xFFFFFF);
-            context.drawTextWithShadow(this.textRenderer, "⌨️ Keybinds  " + (AxoHileClient.hudKeybinds ? "§a[AÇIK]" : "§c[KAPALI]"), this.width / 2 - 85, this.height / 2 - 25, 0xFFFFFF);
-            context.drawTextWithShadow(this.textRenderer, "🧪 Potions    " + (AxoHileClient.hudPotions ? "§a[AÇIK]" : "§c[KAPALI]"), this.width / 2 - 85, this.height / 2 - 5, 0xFFFFFF);
-            context.drawTextWithShadow(this.textRenderer, "🖥️ Ana Menü  " + (AxoHileClient.hudMainMenu ? "§a[AÇIK]" : "§c[KAPALI]"), this.width / 2 - 85, this.height / 2 + 15, 0xFFFFFF);
+            context.drawTextWithShadow(this.textRenderer, "§e[Render / HUD Bileşenleri]", startX, startY, 0xFFFFFF);
+            
+            int staffColor = AxoHileClient.hudStaffList ? AxoHileClient.themeColor : 0xFFFFFFFF;
+            context.fill(startX, startY + 15, startX + 250, startY + 38, 0x80202020);
+            context.drawTextWithShadow(this.textRenderer, "📋 Staff List", startX + 10, startY + 20, staffColor);
+            context.drawTextWithShadow(this.textRenderer, AxoHileClient.hudStaffList ? "AÇIK" : "KAPALI", startX + 200, startY + 20, staffColor);
+
+            int keyColor = AxoHileClient.hudKeybinds ? AxoHileClient.themeColor : 0xFFFFFFFF;
+            context.fill(startX, startY + 42, startX + 250, startY + 65, 0x80202020);
+            context.drawTextWithShadow(this.textRenderer, "⌨️ Keybinds", startX + 10, startY + 47, keyColor);
+            context.drawTextWithShadow(this.textRenderer, AxoHileClient.hudKeybinds ? "AÇIK" : "KAPALI", startX + 200, startY + 47, keyColor);
+
+            int potColor = AxoHileClient.hudPotions ? AxoHileClient.themeColor : 0xFFFFFFFF;
+            context.fill(startX, startY + 69, startX + 250, startY + 92, 0x80202020);
+            context.drawTextWithShadow(this.textRenderer, "🧪 Potions", startX + 10, startY + 74, potColor);
+            context.drawTextWithShadow(this.textRenderer, AxoHileClient.hudPotions ? "AÇIK" : "KAPALI", startX + 200, startY + 74, potColor);
+
+            int mainColor = AxoHileClient.hudMainMenu ? AxoHileClient.themeColor : 0xFFFFFFFF;
+            context.fill(startX, startY + 96, startX + 250, startY + 119, 0x80202020);
+            context.drawTextWithShadow(this.textRenderer, "🖥️ Ana Menü HUD", startX + 10, startY + 101, mainColor);
+            context.drawTextWithShadow(this.textRenderer, AxoHileClient.hudMainMenu ? "AÇIK" : "KAPALI", startX + 200, startY + 101, mainColor);
+
+            int targetColor = AxoHileClient.hudTargetHud ? AxoHileClient.themeColor : 0xFFFFFFFF;
+            context.fill(startX, startY + 123, startX + 250, startY + 146, 0x80202020);
+            context.drawTextWithShadow(this.textRenderer, "🎯 TargetHUD", startX + 10, startY + 128, targetColor);
+            context.drawTextWithShadow(this.textRenderer, AxoHileClient.hudTargetHud ? "AÇIK" : "KAPALI", startX + 200, startY + 128, targetColor);
         }
         else if (selectedCategory.equals("Themes")) {
-            context.drawTextWithShadow(this.textRenderer, "§e[Temalar & Renkler]", this.width / 2 - 85, this.height / 2 - 105, 0xFFFFFF);
-            // Büyük renkli kareler
-            context.fill(this.width / 2 - 75, this.height / 2 - 70, this.width / 2 - 35, this.height / 2 - 30, 0xFFFF5555); // Kırmızı
-            context.fill(this.width / 2 - 25, this.height / 2 - 70, this.width / 2 + 15, this.height / 2 - 30, 0xFF5555FF); // Mavi
-            context.fill(this.width / 2 + 25, this.height / 2 - 70, this.width / 2 + 65, this.height / 2 - 30, 0xFFFFFF55); // Sarı
-            context.fill(this.width / 2 - 75, this.height / 2 - 20, this.width / 2 - 35, this.height / 2 + 20, 0xFFFF55FF); // Pembe
-            context.fill(this.width / 2 - 25, this.height / 2 - 20, this.width / 2 + 15, this.height / 2 + 20, 0xFFFFAA00); // Turuncu
-            context.fill(this.width / 2 + 25, this.height / 2 - 20, this.width / 2 + 65, this.height / 2 + 20, 0xFF9933FF); // Mor
-        }
-
-        // Sağ Tık Alt Menü Paneli
-        if (subMenuOpen) {
-            context.fill(this.width / 2 - 30, this.height / 2 - 40, this.width / 2 + 140, this.height / 2 + 80, 0xF2202020);
-            context.drawTextWithShadow(this.textRenderer, "§6§l" + activeSubMenuModule + " Ayarları", this.width / 2 - 20, this.height / 2 - 30, 0xFFFFFF);
-
-            if (activeSubMenuModule.equals("AttackAura")) {
-                context.drawTextWithShadow(this.textRenderer, "Bypass: " + AxoHileClient.attackBypassType, this.width / 2 - 20, this.height / 2 - 5, 0xAAAAAA);
-                context.drawTextWithShadow(this.textRenderer, "Full Hit: " + (AxoHileClient.fullHitEnabled ? "§aZıplama Bekler" : "§cNormal"), this.width / 2 - 20, this.height / 2 + 15, 0xAAAAAA);
-                context.drawTextWithShadow(this.textRenderer, "Balta Kalkan: " + (AxoHileClient.shieldBreakerAxeMode ? "§aAçık" : "§cKapalı"), this.width / 2 - 20, this.height / 2 + 35, 0xAAAAAA);
-            } else if (activeSubMenuModule.equals("ElytraTarget")) {
-                context.drawTextWithShadow(this.textRenderer, "Bypass: " + AxoHileClient.elytraBypassType, this.width / 2 - 20, this.height / 2 - 5, 0xAAAAAA);
-                context.drawTextWithShadow(this.textRenderer, "Oto Fişek Hızı: " + AxoHileClient.autoFireworkSpeed + "/10", this.width / 2 - 20, this.height / 2 + 15, 0xAAAAAA);
-            }
+            context.drawTextWithShadow(this.textRenderer, "§e[Temalar & Renkler]", startX, startY, 0xFFFFFF);
+            
+            context.fill(startX + 10, startY + 20, startX + 60, startY + 70, 0xFFFF5555);
+            context.fill(startX + 70, startY + 20, startX + 120, startY + 70, 0xFF5555FF);
+            context.fill(startX + 130, startY + 20, startX + 180, startY + 70, 0xFFFFFF55);
+            context.fill(startX + 10, startY + 80, startX + 60, startY + 130, 0xFFFF55FF);
+            context.fill(startX + 70, startY + 80, startX + 120, startY + 130, 0xFFFFAA00);
+            context.fill(startX + 130, startY + 80, startX + 180, startY + 130, 0xFF9933FF);
         }
 
         if (awaitingKeyBind) {
@@ -103,64 +126,76 @@ public class AxoHileMenuScreen extends Screen {
 
         if (awaitingKeyBind) return super.mouseClicked(mouseX, mouseY, button);
 
-        // Kategori seçimi
-        if (mouseX >= centerX - 180 && mouseX <= centerX - 100) {
+        if (mouseX >= centerX - 180 && mouseX <= centerX - 95) {
             String[] categories = {"Combat", "Move", "Render", "Player", "Themes"};
             int catY = centerY - 70;
             for (String cat : categories) {
                 if (mouseY >= catY && mouseY <= catY + 18) {
                     selectedCategory = cat;
-                    subMenuOpen = false;
+                    attackAuraSubMenu = false;
+                    elytraTargetSubMenu = false;
                 }
                 catY += 22;
             }
         }
 
-        // Combat modülleri tıklama
-        if (selectedCategory.equals("Combat") && mouseX >= centerX - 85 && mouseX <= centerX + 90) {
-            // AttackAura
-            if (mouseY >= centerY - 75 && mouseY <= centerY - 40) {
+        int startX = centerX - 85;
+        int startY = centerY - 105;
+
+        if (selectedCategory.equals("Combat")) {
+            if (mouseX >= startX && mouseX <= startX + 250 && mouseY >= startY + 15 && mouseY <= startY + 45) {
                 if (button == 0) AxoHileClient.killauraEnabled = !AxoHileClient.killauraEnabled;
-                else if (button == 1) { subMenuOpen = true; activeSubMenuModule = "AttackAura"; }
+                else if (button == 1) { attackAuraSubMenu = !attackAuraSubMenu; elytraTargetSubMenu = false; }
                 else if (button == 2) { awaitingKeyBind = true; moduleToBind = "AttackAura"; }
             }
-            // ElytraTarget
-            else if (mouseY >= centerY - 30 && mouseY <= centerY + 5) {
-                if (button == 0) AxoHileClient.elytraFlightEnabled = !AxoHileClient.elytraFlightEnabled;
-                else if (button == 1) { subMenuOpen = true; activeSubMenuModule = "ElytraTarget"; }
-                else if (button == 2) { awaitingKeyBind = true; moduleToBind = "ElytraTarget"; }
-            }
-        }
-        else if (selectedCategory.equals("Render") && mouseX >= centerX - 85 && mouseX <= centerX + 90) {
-            if (mouseY >= centerY - 45 && mouseY <= centerY - 25) AxoHileClient.hudStaffList = !AxoHileClient.hudStaffList;
-            if (mouseY >= centerY - 25 && mouseY <= centerY - 5) AxoHileClient.hudKeybinds = !AxoHileClient.hudKeybinds;
-            if (mouseY >= centerY - 5 && mouseY <= centerY + 15) AxoHileClient.hudPotions = !AxoHileClient.hudPotions;
-            if (mouseY >= centerY + 15 && mouseY <= centerY + 35) AxoHileClient.hudMainMenu = !AxoHileClient.hudMainMenu;
-        }
 
-        // Sağ Tık Alt Menü Ayar Değişimi
-        if (subMenuOpen && mouseX >= centerX - 30 && mouseX <= centerX + 140 && mouseY >= centerY - 40 && mouseY <= centerY + 80) {
-            if (activeSubMenuModule.equals("AttackAura")) {
-                if (mouseY >= centerY - 5 && mouseY + 15 >= centerY) {
+            if (attackAuraSubMenu && mouseX >= startX && mouseX <= startX + 250 && mouseY >= startY + 47 && mouseY <= startY + 115) {
+                if (mouseY >= startY + 50 && mouseY <= startY + 70) {
                     if (AxoHileClient.attackBypassType.equals("Vulcan")) AxoHileClient.attackBypassType = "Grim";
                     else if (AxoHileClient.attackBypassType.equals("Grim")) AxoHileClient.attackBypassType = "Polar";
                     else if (AxoHileClient.attackBypassType.equals("Polar")) AxoHileClient.attackBypassType = "Fun";
                     else AxoHileClient.attackBypassType = "Vulcan";
-                } else if (mouseY >= centerY + 15 && mouseY <= centerY + 35) {
+                } else if (mouseY >= startY + 70 && mouseY <= startY + 90) {
                     AxoHileClient.fullHitEnabled = !AxoHileClient.fullHitEnabled;
-                } else if (mouseY >= centerY + 35 && mouseY <= centerY + 55) {
+                } else if (mouseY >= startY + 90 && mouseY <= startY + 110) {
                     AxoHileClient.shieldBreakerAxeMode = !AxoHileClient.shieldBreakerAxeMode;
                 }
-            } else if (activeSubMenuModule.equals("ElytraTarget")) {
-                if (mouseY >= centerY - 5 && mouseY <= centerY + 15) {
+            }
+
+            int elytraBoxY = attackAuraSubMenu ? startY + 125 : startY + 55;
+            if (mouseX >= startX && mouseX <= startX + 250 && mouseY >= elytraBoxY && mouseY <= elytraBoxY + 30) {
+                if (button == 0) AxoHileClient.elytraFlightEnabled = !AxoHileClient.elytraFlightEnabled;
+                else if (button == 1) { elytraTargetSubMenu = !elytraTargetSubMenu; attackAuraSubMenu = false; }
+                else if (button == 2) { awaitingKeyBind = true; moduleToBind = "ElytraTarget"; }
+            }
+
+            if (elytraTargetSubMenu && mouseX >= startX && mouseX <= startX + 250 && mouseY >= elytraBoxY + 32 && mouseY <= elytraBoxY + 85) {
+                if (mouseY >= elytraBoxY + 35 && mouseY <= elytraBoxY + 55) {
                     if (AxoHileClient.elytraBypassType.equals("Vulcan")) AxoHileClient.elytraBypassType = "Grim";
                     else if (AxoHileClient.elytraBypassType.equals("Grim")) AxoHileClient.elytraBypassType = "Polar";
                     else if (AxoHileClient.elytraBypassType.equals("Polar")) AxoHileClient.elytraBypassType = "Fun";
                     else AxoHileClient.elytraBypassType = "Vulcan";
-                } else if (mouseY >= centerY + 15 && mouseY <= centerY + 35) {
+                } else if (mouseY >= elytraBoxY + 55 && mouseY <= elytraBoxY + 80) {
                     AxoHileClient.autoFireworkSpeed = AxoHileClient.autoFireworkSpeed >= 10 ? 1 : AxoHileClient.autoFireworkSpeed + 1;
                 }
             }
+        }
+        else if (selectedCategory.equals("Render")) {
+            if (mouseX >= startX && mouseX <= startX + 250) {
+                if (mouseY >= startY + 15 && mouseY <= startY + 38) AxoHileClient.hudStaffList = !AxoHileClient.hudStaffList;
+                if (mouseY >= startY + 42 && mouseY <= startY + 65) AxoHileClient.hudKeybinds = !AxoHileClient.hudKeybinds;
+                if (mouseY >= startY + 69 && mouseY <= startY + 92) AxoHileClient.hudPotions = !AxoHileClient.hudPotions;
+                if (mouseY >= startY + 96 && mouseY <= startY + 119) AxoHileClient.hudMainMenu = !AxoHileClient.hudMainMenu;
+                if (mouseY >= startY + 123 && mouseY <= startY + 146) AxoHileClient.hudTargetHud = !AxoHileClient.hudTargetHud;
+            }
+        }
+        else if (selectedCategory.equals("Themes")) {
+            if (mouseX >= startX + 10 && mouseX <= startX + 60 && mouseY >= startY + 20 && mouseY <= startY + 70) AxoHileClient.themeColor = 0xFFFF5555;
+            if (mouseX >= startX + 70 && mouseX <= startX + 120 && mouseY >= startY + 20 && mouseY <= startY + 70) AxoHileClient.themeColor = 0xFF5555FF;
+            if (mouseX >= startX + 130 && mouseX <= startX + 180 && mouseY >= startY + 20 && mouseY <= startY + 70) AxoHileClient.themeColor = 0xFFFFFF55;
+            if (mouseX >= startX + 10 && mouseX <= startX + 60 && mouseY >= startY + 80 && mouseY <= startY + 130) AxoHileClient.themeColor = 0xFFFF55FF;
+            if (mouseX >= startX + 70 && mouseX <= startX + 120 && mouseY >= startY + 80 && mouseY <= startY + 130) AxoHileClient.themeColor = 0xFFFFAA00;
+            if (mouseX >= startX + 130 && mouseX <= startX + 180 && mouseY >= startY + 80 && mouseY <= startY + 130) AxoHileClient.themeColor = 0xFF9933FF;
         }
 
         return super.mouseClicked(mouseX, mouseY, button);
