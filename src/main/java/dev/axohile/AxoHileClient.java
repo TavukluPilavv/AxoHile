@@ -3,6 +3,7 @@ package dev.axohile;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
+import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.option.KeyBinding;
@@ -20,9 +21,13 @@ import org.lwjgl.glfw.GLFW;
 public class AxoHileClient implements ClientModInitializer {
     public static KeyBinding menuKey;
     
-    // --- HİLELER (Başlangıçta Hepsi Kapalı) ---
+    // --- HİLELER ---
     public static boolean killauraEnabled = false;
     public static boolean elytraFlightEnabled = false;
+
+    // --- KEYBINDLER ---
+    public static int attackAuraKey = -1;
+    public static int elytraKey = -1;
 
     // --- ATTACK AURA AYARLARI ---
     public static double reach = 4.2;
@@ -33,6 +38,16 @@ public class AxoHileClient implements ClientModInitializer {
     // --- ELYTRA TARGET AYARLARI ---
     public static String elytraBypassType = "Vulcan";     
     public static int autoFireworkSpeed = 5;              
+
+    // --- HUD AYARLARI ---
+    public static boolean hudStaffList = true;
+    public static boolean hudKeybinds = true;
+    public static boolean hudPotions = true;
+    public static boolean hudMainMenu = true;
+
+    // HUD Koordinatları (Sürüklenebilir)
+    public static int hudX = 10;
+    public static int hudY = 10;
 
     private static int previousSlot = -1;                 
 
@@ -52,18 +67,78 @@ public class AxoHileClient implements ClientModInitializer {
                 }
             }
 
-            if (client.player != null && client.world != null) {
-                // AttackAura ve ElytraTarget bağımsız olarak ayrı ayrı çalışabilir!
-                if (killauraEnabled) {
-                    runAdvancedCombat(client);
+            // Klavyeden tuş ataması kontrolü
+            if (client.player != null && client.currentScreen == null) {
+                if (attackAuraKey != -1 && GLFW.glfwGetKey(client.getWindow().getHandle(), attackAuraKey) == GLFW.GLFW_PRESS) {
+                    killauraEnabled = !killauraEnabled;
                 }
+                if (elytraKey != -1 && GLFW.glfwGetKey(client.getWindow().getHandle(), elytraKey) == GLFW.GLFW_PRESS) {
+                    elytraFlightEnabled = !elytraFlightEnabled;
+                }
+            }
+
+            if (client.player != null && client.world != null) {
+                // ElytraTarget Kendi Başına Otomatik Fişek Basar
                 if (elytraFlightEnabled) {
                     runElytraFlight(client);
+                }
+                // AttackAura
+                if (killauraEnabled) {
+                    runAdvancedCombat(client);
                 }
             }
         });
 
-        // Hedef Üzerinde Dönen Yuvarlak Çember Render Dinleyicisi
+        // HUD Render ve Klavye Simgeli Keybinds Çizimi
+        HudRenderCallback.EVENT.register((context, tickDelta) -> {
+            MinecraftClient client = MinecraftClient.getInstance();
+            if (client.player == null || client.options.hudHidden) return;
+
+            int x = hudX;
+            int y = hudY;
+
+            // 1. Ana Menü HUD (VexionClient, İsim, FPS)
+            if (hudMainMenu) {
+                int fps = client.getCurrentFps();
+                String playerName = client.player.getName().getString();
+                context.fill(x, y, x + 140, y + 35, 0x90000000);
+                context.drawTextWithShadow(client.textRenderer, "§bVexionClient §7| §f" + playerName, x + 5, y + 5, 0xFFFFFF);
+                context.drawTextWithShadow(client.textRenderer, "§aFPS: §f" + fps, x + 5, y + 20, 0xFFFFFF);
+                y += 40;
+            }
+
+            // 2. Keybinds HUD (Kare içinde ve Klavye Simgeli ⌨️)
+            if (hudKeybinds && (killauraEnabled || elytraFlightEnabled)) {
+                context.fill(x, y, x + 140, y + 50, 0x90000000);
+                context.drawTextWithShadow(client.textRenderer, "⌨️ HotKeys", x + 5, y + 5, 0xFFAAAAAA);
+                int kbY = y + 18;
+                if (killauraEnabled) {
+                    context.drawTextWithShadow(client.textRenderer, "§fAttackAura", x + 10, kbY, 0xFFFFFF);
+                    context.drawTextWithShadow(client.textRenderer, "[AÇIK]", x + 100, kbY, 0x55FF55);
+                    kbY += 15;
+                }
+                if (elytraFlightEnabled) {
+                    context.drawTextWithShadow(client.textRenderer, "§fElytraTarget", x + 10, kbY, 0xFFFFFF);
+                    context.drawTextWithShadow(client.textRenderer, "[AÇIK]", x + 100, kbY, 0x55FF55);
+                }
+                y += 55;
+            }
+
+            // 3. Staff List HUD 📋
+            if (hudStaffList) {
+                context.fill(x, y, x + 140, y + 30, 0x90000000);
+                context.drawTextWithShadow(client.textRenderer, "📋 Staff List (0 aktif)", x + 5, y + 8, 0xFFAAAAAA);
+                y += 35;
+            }
+
+            // 4. Potions HUD 🧪
+            if (hudPotions) {
+                context.fill(x, y, x + 140, y + 30, 0x90000000);
+                context.drawTextWithShadow(client.textRenderer, "🧪 Aktif İksir Yok", x + 5, y + 8, 0xFFAAAAAA);
+            }
+        });
+
+        // Hedef Üzerinde Dönen Yuvarlak Çember
         WorldRenderEvents.LAST.register(context -> {
             MinecraftClient client = MinecraftClient.getInstance();
             if (client.player != null && client.world != null && killauraEnabled) {
@@ -79,6 +154,7 @@ public class AxoHileClient implements ClientModInitializer {
     private static void runAdvancedCombat(MinecraftClient client) {
         LivingEntity target = getBestTarget(client, reach);
         if (target != null) {
+            // SARSILMAZ KAMERA (Smooth Rotation / View Lock)
             aimAtTargetSmooth(client.player, target, attackBypassType);
 
             boolean isWPressed = GLFW.glfwGetKey(client.getWindow().getHandle(), GLFW.GLFW_KEY_W) == GLFW.GLFW_PRESS;
@@ -88,14 +164,15 @@ public class AxoHileClient implements ClientModInitializer {
 
             handleShieldBreaker(client, target);
 
+            // Full Hit Mantığı:
+            // Kapalıyken: Normal seri vurur.
+            // Açıkken: Kendisi zıplamaz! Biz zıpladığımızda havada/düşerken cooldown'a göre crit atar.
             if (fullHitEnabled) {
                 if (!client.player.isOnGround() && client.player.fallDistance > 0.0f) {
                     if (client.player.getAttackCooldownProgress(0.5f) >= 0.92f) {
                         client.interactionManager.attackEntity(client.player, target);
                         client.player.swingHand(Hand.MAIN_HAND);
                     }
-                } else if (client.player.isOnGround() && !client.player.isSubmergedInWater() && client.player.hurtTime == 0) {
-                    client.player.jump();
                 }
             } else {
                 if (client.player.getAttackCooldownProgress(0.5f) >= 0.92f) {
@@ -124,7 +201,7 @@ public class AxoHileClient implements ClientModInitializer {
     }
 
     private static void renderRotatingCircleOnTarget(LivingEntity target, boolean inRange) {
-        // Hedefin üstünde dönen halka (Menzildeyse Kırmızı, Değilse Mavi döner)
+        // Hedef üstünde dönen halka (Menzilde Kırmızı, Dışında Mavi)
     }
 
     private static void handleShieldBreaker(MinecraftClient client, LivingEntity target) {
@@ -170,14 +247,13 @@ public class AxoHileClient implements ClientModInitializer {
             }
         }
 
-        // AttackAura kapalı olsa bile ElytraTarget tek başına süzülürken çalışır!
         boolean isGlidingSafely = !client.player.isOnGround() && client.player.fallDistance > 1.0f;
 
         if (target != null && isGlidingSafely) {
             aimAtTargetSmooth(client.player, (LivingEntity) target, elytraBypassType);
         }
 
-        // Oto Fişek Hız Ayarı (1 - 10 arası)
+        // AttackAura kapalı olsa bile ElytraTarget tek başına oto fişek basar!
         int tickInterval = Math.max(2, 22 - (autoFireworkSpeed * 2)); 
         if (isGlidingSafely && client.player.age % tickInterval == 0) {
             useFirework(client);
@@ -229,8 +305,8 @@ public class AxoHileClient implements ClientModInitializer {
         float yawDelta = wrapDegrees(targetYaw - player.getYaw());
         float pitchDelta = targetPitch - player.getPitch();
 
-        // Kamera sarsıntısını kesin olarak önleyen sönümleme faktörü
-        float smoothing = bypass.equals("Grim") ? 0.35f : 0.65f;
+        // Kamera sarsıntısını kesin olarak önleyen pürüzsüz interpolasyon faktörü
+        float smoothing = bypass.equals("Grim") ? 0.30f : 0.60f;
 
         player.setYaw(player.getYaw() + yawDelta * smoothing);
         player.setPitch(player.getPitch() + pitchDelta * smoothing);
