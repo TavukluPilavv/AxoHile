@@ -43,7 +43,7 @@ public class AxoHileClient implements ClientModInitializer {
     // --- ELYTRA TARGET AYARLARI ---
     public static String elytraBypassType = "Vulcan";     
     public static int autoFireworkSpeed = 5;              
-    public static int elytraTargetRange = 100;            // Genişletilmiş Uzak Mesafe (100 Blok)
+    public static int elytraTargetRange = 100;            
 
     // --- AUTOTOTEM AYARLARI (3 Kalp = 6 Can) ---
     public static int autoTotemHealth = 3; 
@@ -60,7 +60,6 @@ public class AxoHileClient implements ClientModInitializer {
     public static boolean hudMainMenu = false;
     public static boolean hudTargetHud = false;
 
-    // Sürüklenebilir HUD koordinatları (Shift + Sol Tık ile taşınır)
     public static int hudX = 15;
     public static int hudY = 15;
     private static boolean isDraggingHud = false;
@@ -115,7 +114,6 @@ public class AxoHileClient implements ClientModInitializer {
             }
         });
 
-        // HUD Render & Shift + Sol Tık ile Sürükleme Mantığı
         HudRenderCallback.EVENT.register((context, tickDelta) -> {
             MinecraftClient client = MinecraftClient.getInstance();
             if (client.player == null || client.options.hudHidden) return;
@@ -236,7 +234,7 @@ public class AxoHileClient implements ClientModInitializer {
     private static void runAutoTotem(MinecraftClient client) {
         if (client.player == null || client.interactionManager == null) return;
         
-        float thresholdHealth = autoTotemHealth * 2.0f; // Kalp başına 2 can
+        float thresholdHealth = autoTotemHealth * 2.0f;
         if (client.player.getHealth() <= thresholdHealth) {
             if (!client.player.getOffHandStack().isOf(Items.TOTEM_OF_UNDYING)) {
                 savedOffhandStack = client.player.getOffHandStack().copy();
@@ -265,7 +263,7 @@ public class AxoHileClient implements ClientModInitializer {
         }
     }
 
-    // --- KESİN KRİTİK VE COOLDOWN SAVAŞ SİSTEMİ ---
+    // --- KESİN VE GARANTİLİ KRİTİK VURUŞ (CHATGPT ONAYLI DÜZELTME) ---
     private static void runAdvancedCombat(MinecraftClient client) {
         if (client.player == null || client.interactionManager == null) return;
 
@@ -296,14 +294,18 @@ public class AxoHileClient implements ClientModInitializer {
 
             // Full Hit ve Cooldown Mantığı
             if (fullHitEnabled) {
-                // Full Hit Açıkken: Yerdeyse zıpla, havadayken (düşerken/süzülürken) cooldown dolunca crit vur
+                // Yerdeyse zıpla
                 if (client.player.isOnGround()) {
                     client.player.jump();
-                } else if (client.player.getAttackCooldownProgress(0.5f) >= 0.90f) {
-                    client.player.setSprinting(false);
-                    client.interactionManager.attackEntity(client.player, target);
-                    client.player.swingHand(Hand.MAIN_HAND);
-                    restorePreviousItem(client);
+                } else {
+                    // Havadayken: ChatGPT'nin haklı tespiti olan aşağı düşüş hızı (velocity.y < 0) ve cooldown kontrolü
+                    boolean isFallingDown = client.player.getVelocity().y < -0.05 && client.player.fallDistance > 0.0f;
+                    if (isFallingDown && client.player.getAttackCooldownProgress(0.5f) >= 0.85f) {
+                        client.player.setSprinting(false);
+                        client.interactionManager.attackEntity(client.player, target);
+                        client.player.swingHand(Hand.MAIN_HAND);
+                        restorePreviousItem(client);
+                    }
                 }
             } else {
                 // Full Hit Kapalıyken: Normal yerde cooldown dolduğunda düz vurur, asla spam yapmaz
