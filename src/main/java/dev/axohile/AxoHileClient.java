@@ -263,7 +263,7 @@ public class AxoHileClient implements ClientModInitializer {
         }
     }
 
-    // --- KESİN VE GARANTİLİ KRİTİK VURUŞ (CHATGPT ONAYLI DÜZELTME) ---
+    // --- TEK MERKEZLİ VE TÜM KRİTİK ŞARTLARINI DOĞRULAYAN SAVAŞ SİSTEMİ ---
     private static void runAdvancedCombat(MinecraftClient client) {
         if (client.player == null || client.interactionManager == null) return;
 
@@ -276,7 +276,7 @@ public class AxoHileClient implements ClientModInitializer {
                 trackTargetMovement(client.player, target);
             }
 
-            // Kalkan Kırma & Balta Yönetimi
+            // Kalkan Kırma & Balta Yönetimi (Sadece slot seçer, ikinci bir saldırı yapmaz)
             boolean targetIsBlocking = target.isUsingItem() && target.getActiveItem().isOf(Items.SHIELD);
             if (targetIsBlocking && shieldBreakerAxeMode) {
                 for (int i = 0; i < 9; i++) {
@@ -294,13 +294,20 @@ public class AxoHileClient implements ClientModInitializer {
 
             // Full Hit ve Cooldown Mantığı
             if (fullHitEnabled) {
-                // Yerdeyse zıpla
+                // Yerdeyse otomatik zıpla
                 if (client.player.isOnGround()) {
                     client.player.jump();
                 } else {
-                    // Havadayken: ChatGPT'nin haklı tespiti olan aşağı düşüş hızı (velocity.y < 0) ve cooldown kontrolü
-                    boolean isFallingDown = client.player.getVelocity().y < -0.05 && client.player.fallDistance > 0.0f;
-                    if (isFallingDown && client.player.getAttackCooldownProgress(0.5f) >= 0.85f) {
+                    // ChatGPT'nin haklı uyarısı doğrultusunda: Tüm Minecraft kritik şartları eksiksiz kontrol ediliyor
+                    boolean isStrictCritReady = !client.player.isOnGround()
+                            && client.player.fallDistance > 0.0f
+                            && client.player.getVelocity().y < -0.01
+                            && !client.player.isClimbing()
+                            && !client.player.isTouchingWater()
+                            && !client.player.hasVehicle()
+                            && !client.player.hasStatusEffect(net.minecraft.entity.effect.StatusEffects.BLINDNESS);
+
+                    if (isStrictCritReady && client.player.getAttackCooldownProgress(0.5f) >= 0.85f) {
                         client.player.setSprinting(false);
                         client.interactionManager.attackEntity(client.player, target);
                         client.player.swingHand(Hand.MAIN_HAND);
