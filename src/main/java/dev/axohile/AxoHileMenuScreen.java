@@ -24,8 +24,8 @@ public class AxoHileMenuScreen extends Screen {
 
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
-        // Bulanıklık YOK, net koyu arkaplan
-        context.fill(0, 0, this.width, this.height, 0x80000000);
+        // Bulanıklık yok, net koyu arkaplan
+        context.fill(0, 0, this.width, this.height, 0x60000000);
 
         context.fill(this.width / 2 - 180, this.height / 2 - 120, this.width / 2 + 180, this.height / 2 + 120, 0xF0101010);
         
@@ -81,7 +81,7 @@ public class AxoHileMenuScreen extends Screen {
 
             if (autoTotemSubMenu) {
                 context.fill(startX, startY + 47, startX + 250, startY + 85, 0x90151515);
-                context.drawTextWithShadow(this.textRenderer, "Can Eşiği: " + AxoHileClient.autoTotemHealth + " Can", startX + 15, startY + 58, 0xCCCCCC);
+                context.drawTextWithShadow(this.textRenderer, "Can Eşiği: " + AxoHileClient.autoTotemHealth + " Kalp", startX + 15, startY + 58, 0xCCCCCC);
             }
         }
         else if (selectedCategory.equals("Render")) {
@@ -222,7 +222,7 @@ public class AxoHileMenuScreen extends Screen {
             }
             if (autoTotemSubMenu && mouseX >= startX && mouseX <= startX + 250 && mouseY >= startY + 47 && mouseY <= startY + 85) {
                 if (mouseY >= startY + 50 && mouseY <= startY + 75) {
-                    AxoHileClient.autoTotemHealth = AxoHileClient.autoTotemHealth >= 20 ? 2 : AxoHileClient.autoTotemHealth + 1;
+                    AxoHileClient.autoTotemHealth = AxoHileClient.autoTotemHealth >= 10 ? 1 : AxoHileClient.autoTotemHealth + 1;
                 }
             }
         }
