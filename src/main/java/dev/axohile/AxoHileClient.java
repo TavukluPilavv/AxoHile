@@ -39,15 +39,18 @@ public class AxoHileClient implements ClientModInitializer {
     public static String elytraBypassType = "Vulcan";     
     public static int autoFireworkSpeed = 5;              
 
-    // --- HUD AYARLARI ---
+    // --- TEMA ---
+    public static int themeColor = 0xFF5555FF;
+
+    // --- HUD ---
     public static boolean hudStaffList = true;
     public static boolean hudKeybinds = true;
     public static boolean hudPotions = true;
     public static boolean hudMainMenu = true;
+    public static boolean hudTargetHud = true; // TargetHUD Açık/Kapalı
 
-    // HUD Koordinatları (Sürüklenebilir)
-    public static int hudX = 10;
-    public static int hudY = 10;
+    public static int hudX = 15;
+    public static int hudY = 15;
 
     private static int previousSlot = -1;                 
 
@@ -67,7 +70,6 @@ public class AxoHileClient implements ClientModInitializer {
                 }
             }
 
-            // Klavyeden tuş ataması kontrolü
             if (client.player != null && client.currentScreen == null) {
                 if (attackAuraKey != -1 && GLFW.glfwGetKey(client.getWindow().getHandle(), attackAuraKey) == GLFW.GLFW_PRESS) {
                     killauraEnabled = !killauraEnabled;
@@ -78,18 +80,16 @@ public class AxoHileClient implements ClientModInitializer {
             }
 
             if (client.player != null && client.world != null) {
-                // ElytraTarget Kendi Başına Otomatik Fişek Basar
                 if (elytraFlightEnabled) {
                     runElytraFlight(client);
                 }
-                // AttackAura
                 if (killauraEnabled) {
                     runAdvancedCombat(client);
                 }
             }
         });
 
-        // HUD Render ve Klavye Simgeli Keybinds Çizimi
+        // HUD Render & TargetHUD
         HudRenderCallback.EVENT.register((context, tickDelta) -> {
             MinecraftClient client = MinecraftClient.getInstance();
             if (client.player == null || client.options.hudHidden) return;
@@ -97,55 +97,83 @@ public class AxoHileClient implements ClientModInitializer {
             int x = hudX;
             int y = hudY;
 
-            // 1. Ana Menü HUD (VexionClient, İsim, FPS)
+            // 1. Ana Menü HUD
             if (hudMainMenu) {
                 int fps = client.getCurrentFps();
                 String playerName = client.player.getName().getString();
-                context.fill(x, y, x + 140, y + 35, 0x90000000);
-                context.drawTextWithShadow(client.textRenderer, "§bVexionClient §7| §f" + playerName, x + 5, y + 5, 0xFFFFFF);
-                context.drawTextWithShadow(client.textRenderer, "§aFPS: §f" + fps, x + 5, y + 20, 0xFFFFFF);
-                y += 40;
+                context.fill(x, y, x + 150, y + 36, 0x90000000);
+                context.drawTextWithShadow(client.textRenderer, "⭐ VexionClient §7| §f" + playerName, x + 6, y + 6, 0xFFFFFF);
+                context.drawTextWithShadow(client.textRenderer, "🟢 FPS: §f" + fps + " §7| 🏓 12ms §7| 🌍 local", x + 6, y + 21, 0xFFFFFF);
+                y += 42;
             }
 
-            // 2. Keybinds HUD (Kare içinde ve Klavye Simgeli ⌨️)
-            if (hudKeybinds && (killauraEnabled || elytraFlightEnabled)) {
-                context.fill(x, y, x + 140, y + 50, 0x90000000);
-                context.drawTextWithShadow(client.textRenderer, "⌨️ HotKeys", x + 5, y + 5, 0xFFAAAAAA);
-                int kbY = y + 18;
-                if (killauraEnabled) {
+            // 2. Keybinds HUD
+            boolean hasKeybinds = (killauraEnabled && attackAuraKey != -1) || (elytraFlightEnabled && elytraKey != -1);
+            if (hudKeybinds && hasKeybinds) {
+                context.fill(x, y, x + 150, y + 45, 0x90000000);
+                context.drawTextWithShadow(client.textRenderer, "⌨️ Keybinds", x + 6, y + 6, 0xFFAAAAAA);
+                int kbY = y + 20;
+                if (killauraEnabled && attackAuraKey != -1) {
                     context.drawTextWithShadow(client.textRenderer, "§fAttackAura", x + 10, kbY, 0xFFFFFF);
-                    context.drawTextWithShadow(client.textRenderer, "[AÇIK]", x + 100, kbY, 0x55FF55);
-                    kbY += 15;
+                    context.drawTextWithShadow(client.textRenderer, "[" + GLFW.glfwGetKeyName(attackAuraKey, 0) + "]", x + 100, kbY, 0x55FF55);
+                    kbY += 14;
                 }
-                if (elytraFlightEnabled) {
+                if (elytraFlightEnabled && elytraKey != -1) {
                     context.drawTextWithShadow(client.textRenderer, "§fElytraTarget", x + 10, kbY, 0xFFFFFF);
-                    context.drawTextWithShadow(client.textRenderer, "[AÇIK]", x + 100, kbY, 0x55FF55);
+                    context.drawTextWithShadow(client.textRenderer, "[" + GLFW.glfwGetKeyName(elytraKey, 0) + "]", x + 100, kbY, 0x55FF55);
                 }
-                y += 55;
+                y += 50;
             }
 
-            // 3. Staff List HUD 📋
+            // 3. Staff List HUD
             if (hudStaffList) {
-                context.fill(x, y, x + 140, y + 30, 0x90000000);
-                context.drawTextWithShadow(client.textRenderer, "📋 Staff List (0 aktif)", x + 5, y + 8, 0xFFAAAAAA);
-                y += 35;
+                context.fill(x, y, x + 150, y + 30, 0x90000000);
+                context.drawTextWithShadow(client.textRenderer, "📋 Staff List (0 aktif)", x + 6, y + 8, 0xFFAAAAAA);
+                y += 36;
             }
 
-            // 4. Potions HUD 🧪
+            // 4. Potions HUD
             if (hudPotions) {
-                context.fill(x, y, x + 140, y + 30, 0x90000000);
-                context.drawTextWithShadow(client.textRenderer, "🧪 Aktif İksir Yok", x + 5, y + 8, 0xFFAAAAAA);
+                context.fill(x, y, x + 150, y + 30, 0x90000000);
+                context.drawTextWithShadow(client.textRenderer, "🧪 Aktif İksir Yok", x + 6, y + 8, 0xFFAAAAAA);
+                y += 36;
+            }
+
+            // 5. TargetHUD (Hedef Mob/Oyuncu Adı ve Can Barı)
+            if (hudTargetHud) {
+                LivingEntity target = getBestTarget(client, 8.0); // Yakındaki hedefi algılar
+                if (target != null) {
+                    int tX = client.getWindow().getScaledWidth() / 2 - 75;
+                    int tY = client.getWindow().getScaledHeight() / 2 + 25; // Ekranın ortasında alt kısımda
+
+                    String targetName = target.getName().getString();
+                    float health = target.getHealth();
+                    float maxHealth = target.getMaxHealth();
+                    int healthWidth = (int) ((health / maxHealth) * 130);
+
+                    // Arkaplan Kutusu
+                    context.fill(tX, tY, tX + 150, tY + 45, 0x90000000);
+                    // Hedef Adı ve Can Miktarı
+                    context.drawTextWithShadow(client.textRenderer, "🎯 " + targetName, tX + 8, tY + 8, 0xFFFFFF);
+                    context.drawTextWithShadow(client.textRenderer, "❤ " + (int)health + "/" + (int)maxHealth, tX + 100, tY + 8, 0xFF5555);
+
+                    // Can Barı (Health Bar)
+                    context.fill(tX + 8, tY + 28, tX + 142, tY + 38, 0xFF333333);
+                    if (healthWidth > 0) {
+                        context.fill(tX + 8, tY + 28, tX + 8 + healthWidth, tY + 38, themeColor);
+                    }
+                }
             }
         });
 
-        // Hedef Üzerinde Dönen Yuvarlak Çember
+        // Sarsıntısız Kamera & Hit Göstergesi
         WorldRenderEvents.LAST.register(context -> {
             MinecraftClient client = MinecraftClient.getInstance();
             if (client.player != null && client.world != null && killauraEnabled) {
                 LivingEntity target = getBestTarget(client, reach);
                 if (target != null) {
                     boolean inRange = client.player.distanceTo(target) <= reach;
-                    renderRotatingCircleOnTarget(target, inRange);
+                    renderTargetIndicator(target, inRange);
                 }
             }
         });
@@ -154,7 +182,6 @@ public class AxoHileClient implements ClientModInitializer {
     private static void runAdvancedCombat(MinecraftClient client) {
         LivingEntity target = getBestTarget(client, reach);
         if (target != null) {
-            // SARSILMAZ KAMERA (Smooth Rotation / View Lock)
             aimAtTargetSmooth(client.player, target, attackBypassType);
 
             boolean isWPressed = GLFW.glfwGetKey(client.getWindow().getHandle(), GLFW.GLFW_KEY_W) == GLFW.GLFW_PRESS;
@@ -164,9 +191,6 @@ public class AxoHileClient implements ClientModInitializer {
 
             handleShieldBreaker(client, target);
 
-            // Full Hit Mantığı:
-            // Kapalıyken: Normal seri vurur.
-            // Açıkken: Kendisi zıplamaz! Biz zıpladığımızda havada/düşerken cooldown'a göre crit atar.
             if (fullHitEnabled) {
                 if (!client.player.isOnGround() && client.player.fallDistance > 0.0f) {
                     if (client.player.getAttackCooldownProgress(0.5f) >= 0.92f) {
@@ -200,8 +224,8 @@ public class AxoHileClient implements ClientModInitializer {
         return closest;
     }
 
-    private static void renderRotatingCircleOnTarget(LivingEntity target, boolean inRange) {
-        // Hedef üstünde dönen halka (Menzilde Kırmızı, Dışında Mavi)
+    private static void renderTargetIndicator(LivingEntity target, boolean inRange) {
+        // Hedef üstündeki hit çemberi
     }
 
     private static void handleShieldBreaker(MinecraftClient client, LivingEntity target) {
@@ -253,7 +277,6 @@ public class AxoHileClient implements ClientModInitializer {
             aimAtTargetSmooth(client.player, (LivingEntity) target, elytraBypassType);
         }
 
-        // AttackAura kapalı olsa bile ElytraTarget tek başına oto fişek basar!
         int tickInterval = Math.max(2, 22 - (autoFireworkSpeed * 2)); 
         if (isGlidingSafely && client.player.age % tickInterval == 0) {
             useFirework(client);
@@ -305,7 +328,6 @@ public class AxoHileClient implements ClientModInitializer {
         float yawDelta = wrapDegrees(targetYaw - player.getYaw());
         float pitchDelta = targetPitch - player.getPitch();
 
-        // Kamera sarsıntısını kesin olarak önleyen pürüzsüz interpolasyon faktörü
         float smoothing = bypass.equals("Grim") ? 0.30f : 0.60f;
 
         player.setYaw(player.getYaw() + yawDelta * smoothing);
