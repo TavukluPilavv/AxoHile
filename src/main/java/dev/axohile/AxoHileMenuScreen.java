@@ -9,6 +9,7 @@ public class AxoHileMenuScreen extends Screen {
     private String selectedCategory = "Combat";
     private boolean attackAuraSubMenu = false;
     private boolean elytraTargetSubMenu = false;
+    private boolean autoTotemSubMenu = false;
     private boolean awaitingKeyBind = false;
     private String moduleToBind = "";
 
@@ -23,8 +24,10 @@ public class AxoHileMenuScreen extends Screen {
 
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
+        // Bulanıklık yapmayan, net koyu arka plan
         context.fill(this.width / 2 - 180, this.height / 2 - 120, this.width / 2 + 180, this.height / 2 + 120, 0xF0101010);
         
+        // Sol Kategori Paneli
         context.fill(this.width / 2 - 180, this.height / 2 - 120, this.width / 2 - 95, this.height / 2 + 120, 0xF0181818);
         context.drawTextWithShadow(this.textRenderer, "§bVexionClient", this.width / 2 - 170, this.height / 2 - 105, 0xFFFFFF);
 
@@ -40,9 +43,11 @@ public class AxoHileMenuScreen extends Screen {
         int startX = this.width / 2 - 85;
         int startY = this.height / 2 - 105;
 
+        // Sağ Taraf - İçerik (Yatay Dikdörtgen Kutular)
         if (selectedCategory.equals("Combat")) {
             context.drawTextWithShadow(this.textRenderer, "§e[Combat Modülleri]", startX, startY, 0xFFFFFF);
 
+            // AttackAura
             int auraColor = AxoHileClient.killauraEnabled ? AxoHileClient.themeColor : 0xFFFFFFFF;
             context.fill(startX, startY + 15, startX + 250, startY + 45, 0x80202020);
             context.drawTextWithShadow(this.textRenderer, "⚔️ AttackAura", startX + 10, startY + 23, auraColor);
@@ -67,6 +72,19 @@ public class AxoHileMenuScreen extends Screen {
                 context.drawTextWithShadow(this.textRenderer, "Oto Fişek Hızı: " + AxoHileClient.autoFireworkSpeed + "/10", startX + 15, elytraBoxY + 60, 0xCCCCCC);
             }
         } 
+        else if (selectedCategory.equals("Move")) {
+            context.drawTextWithShadow(this.textRenderer, "§e[Move / Player Modülleri]", startX, startY, 0xFFFFFF);
+
+            int totemColor = AxoHileClient.autoTotemEnabled ? AxoHileClient.themeColor : 0xFFFFFFFF;
+            context.fill(startX, startY + 15, startX + 250, startY + 45, 0x80202020);
+            context.drawTextWithShadow(this.textRenderer, "🛡️ AutoTotem", startX + 10, startY + 23, totemColor);
+            context.drawTextWithShadow(this.textRenderer, AxoHileClient.autoTotemEnabled ? "AÇIK" : "KAPALI", startX + 200, startY + 23, totemColor);
+
+            if (autoTotemSubMenu) {
+                context.fill(startX, startY + 47, startX + 250, startY + 85, 0x90151515);
+                context.drawTextWithShadow(this.textRenderer, "Can Eşiği: " + AxoHileClient.autoTotemHealth + " Can (Kalp)", startX + 15, startY + 58, 0xCCCCCC);
+            }
+        }
         else if (selectedCategory.equals("Render")) {
             context.drawTextWithShadow(this.textRenderer, "§e[Render / HUD Bileşenleri]", startX, startY, 0xFFFFFF);
             
@@ -129,6 +147,7 @@ public class AxoHileMenuScreen extends Screen {
                     selectedCategory = cat;
                     attackAuraSubMenu = false;
                     elytraTargetSubMenu = false;
+                    autoTotemSubMenu = false;
                 }
                 catY += 22;
             }
@@ -172,6 +191,17 @@ public class AxoHileMenuScreen extends Screen {
                     else AxoHileClient.elytraBypassType = "Vulcan";
                 } else if (mouseY >= elytraBoxY + 55 && mouseY <= elytraBoxY + 80) {
                     AxoHileClient.autoFireworkSpeed = AxoHileClient.autoFireworkSpeed >= 10 ? 1 : AxoHileClient.autoFireworkSpeed + 1;
+                }
+            }
+        }
+        else if (selectedCategory.equals("Move")) {
+            if (mouseX >= startX && mouseX <= startX + 250 && mouseY >= startY + 15 && mouseY <= startY + 45) {
+                if (button == 0) AxoHileClient.autoTotemEnabled = !AxoHileClient.autoTotemEnabled;
+                else if (button == 1) { autoTotemSubMenu = !autoTotemSubMenu; }
+            }
+            if (autoTotemSubMenu && mouseX >= startX && mouseX <= startX + 250 && mouseY >= startY + 47 && mouseY <= startY + 85) {
+                if (mouseY >= startY + 50 && mouseY <= startY + 75) {
+                    AxoHileClient.autoTotemHealth = AxoHileClient.autoTotemHealth >= 20 ? 2 : AxoHileClient.autoTotemHealth + 1;
                 }
             }
         }
