@@ -24,8 +24,8 @@ public class AxoHileMenuScreen extends Screen {
 
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
-        // Bulanıklık yok, net koyu arkaplan
-        context.fill(0, 0, this.width, this.height, 0x60000000);
+        // Bulanıklık YOK, net koyu arkaplan
+        context.fill(0, 0, this.width, this.height, 0x50000000);
 
         context.fill(this.width / 2 - 180, this.height / 2 - 120, this.width / 2 + 180, this.height / 2 + 120, 0xF0101010);
         
@@ -306,4 +306,3 @@ public class AxoHileMenuScreen extends Screen {
         return false;
     }
 }
-
