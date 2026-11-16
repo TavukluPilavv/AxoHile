@@ -24,8 +24,8 @@ public class AxoHileMenuScreen extends Screen {
 
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
-        // Bulanıklık YOK, net koyu arkaplan
-        context.fill(0, 0, this.width, this.height, 0x50000000);
+        // Bulanıklık YOK, tamamen net koyu arkaplan
+        context.fill(0, 0, this.width, this.height, 0x40000000);
 
         context.fill(this.width / 2 - 180, this.height / 2 - 120, this.width / 2 + 180, this.height / 2 + 120, 0xF0101010);
         
@@ -55,7 +55,7 @@ public class AxoHileMenuScreen extends Screen {
             if (attackAuraSubMenu) {
                 context.fill(startX, startY + 47, startX + 250, startY + 115, 0x90151515);
                 context.drawTextWithShadow(this.textRenderer, "Bypass: " + AxoHileClient.attackBypassType, startX + 15, startY + 55, 0xCCCCCC);
-                context.drawTextWithShadow(this.textRenderer, "Full Hit: " + (AxoHileClient.fullHitEnabled ? "Zıplama Bekler" : "Normal"), startX + 15, startY + 75, 0xCCCCCC);
+                context.drawTextWithShadow(this.textRenderer, "Full Hit: " + (AxoHileClient.fullHitEnabled ? "Zıpla & Crit" : "Normal (Cooldown)"), startX + 15, startY + 75, 0xCCCCCC);
                 context.drawTextWithShadow(this.textRenderer, "Balta Kalkan: " + (AxoHileClient.shieldBreakerAxeMode ? "Açık" : "Kapalı"), startX + 15, startY + 95, 0xCCCCCC);
             }
 
@@ -66,9 +66,10 @@ public class AxoHileMenuScreen extends Screen {
             context.drawTextWithShadow(this.textRenderer, AxoHileClient.elytraFlightEnabled ? "AÇIK" : "KAPALI", startX + 200, elytraBoxY + 8, elytraColor);
 
             if (elytraTargetSubMenu) {
-                context.fill(startX, elytraBoxY + 32, startX + 250, elytraBoxY + 85, 0x90151515);
+                context.fill(startX, elytraBoxY + 32, startX + 250, elytraBoxY + 95, 0x90151515);
                 context.drawTextWithShadow(this.textRenderer, "Bypass: " + AxoHileClient.elytraBypassType, startX + 15, elytraBoxY + 40, 0xCCCCCC);
                 context.drawTextWithShadow(this.textRenderer, "Oto Fişek Hızı: " + AxoHileClient.autoFireworkSpeed + "/10", startX + 15, elytraBoxY + 60, 0xCCCCCC);
+                context.drawTextWithShadow(this.textRenderer, "Hedef Mesafe: " + AxoHileClient.elytraTargetRange + " Blok", startX + 15, elytraBoxY + 80, 0xCCCCCC);
             }
         } 
         else if (selectedCategory.equals("Move")) {
@@ -204,14 +205,16 @@ public class AxoHileMenuScreen extends Screen {
                 else if (button == 2) { awaitingKeyBind = true; moduleToBind = "ElytraTarget"; }
             }
 
-            if (elytraTargetSubMenu && mouseX >= startX && mouseX <= startX + 250 && mouseY >= elytraBoxY + 32 && mouseY <= elytraBoxY + 85) {
+            if (elytraTargetSubMenu && mouseX >= startX && mouseX <= startX + 250 && mouseY >= elytraBoxY + 32 && mouseY <= elytraBoxY + 95) {
                 if (mouseY >= elytraBoxY + 35 && mouseY <= elytraBoxY + 55) {
                     if (AxoHileClient.elytraBypassType.equals("Vulcan")) AxoHileClient.elytraBypassType = "Grim";
                     else if (AxoHileClient.elytraBypassType.equals("Grim")) AxoHileClient.elytraBypassType = "Polar";
                     else if (AxoHileClient.elytraBypassType.equals("Polar")) AxoHileClient.elytraBypassType = "Fun";
                     else AxoHileClient.elytraBypassType = "Vulcan";
-                } else if (mouseY >= elytraBoxY + 55 && mouseY <= elytraBoxY + 80) {
+                } else if (mouseY >= elytraBoxY + 55 && mouseY <= elytraBoxY + 75) {
                     AxoHileClient.autoFireworkSpeed = AxoHileClient.autoFireworkSpeed >= 10 ? 1 : AxoHileClient.autoFireworkSpeed + 1;
+                } else if (mouseY >= elytraBoxY + 75 && mouseY <= elytraBoxY + 92) {
+                    AxoHileClient.elytraTargetRange = AxoHileClient.elytraTargetRange >= 100 ? 20 : AxoHileClient.elytraTargetRange + 10;
                 }
             }
         }
