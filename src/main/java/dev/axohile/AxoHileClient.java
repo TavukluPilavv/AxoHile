@@ -1,4 +1,4 @@
-package com.axohile;
+package dev.axohile;
 
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
@@ -73,7 +73,6 @@ public class AxoHileClient implements ClientModInitializer {
 
             handleShieldBreaker(client, target);
 
-            // Auto-Crit (Düzeltildi: isFallFlying kaldırıldı, güvenli zıplama döngüsü eklendi)
             if (client.player.isOnGround() && !client.player.isSubmergedInWater() && client.player.hurtTime == 0) {
                 client.player.jump();
             }
@@ -150,7 +149,6 @@ public class AxoHileClient implements ClientModInitializer {
             aimAtTargetBypass(client.player, (LivingEntity) target);
         }
 
-        // Düzeltildi: isFallFlying yerine düşüş ve havada olma kontrolü kullanıldı
         if (!client.player.isOnGround() && client.player.fallDistance > 1.0f && client.player.age % 20 == 0) {
             useFirework(client);
         }
@@ -169,7 +167,7 @@ public class AxoHileClient implements ClientModInitializer {
 
         if (fireworkSlot == -1) {
             for (int i = 9; i < 36; i++) {
-                if (client.player.getInventory().getStack(i).isOf(Items.FIREWORK_ROCKET)) {
+                if (client.player.getInventory().getStack(i).getItem() instanceof FireworkRocketItem || client.player.getInventory().getStack(i).isOf(Items.FIREWORK_ROCKET)) {
                     client.interactionManager.clickSlot(client.player.playerScreenHandler.syncId, i, 0, SlotActionType.SWAP, client.player);
                     fireworkSlot = 0;
                     break;
