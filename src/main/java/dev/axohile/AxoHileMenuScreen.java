@@ -117,18 +117,19 @@ public class AxoHileMenuScreen extends Screen {
             context.drawTextWithShadow(this.textRenderer, AxoHileClient.hudTargetHud ? "AÇIK" : "KAPALI", startX + 200, startY + 128, targetColor);
         }
         else if (selectedCategory.equals("Accounts")) {
-            context.drawTextWithShadow(this.textRenderer, "§e[Account Manager - Hesap Yönetimi]", startX, startY, 0xFFFFFF);
+            context.drawTextWithShadow(this.textRenderer, "§e[Çevrimdışı Hesap Yöneticisi]", startX, startY, 0xFFFFFF);
             
             context.fill(startX, startY + 18, startX + 250, startY + 42, 0x80202020);
-            context.drawTextWithShadow(this.textRenderer, "İsim: " + AxoHileClient.typedAccountInput + "_", startX + 10, startY + 26, 0xFFFFFF);
+            context.drawTextWithShadow(this.textRenderer, "Kullanıcı adı: " + AxoHileClient.typedAccountInput + "_", startX + 10, startY + 26, 0xFFFFFF);
 
             context.fill(startX, startY + 48, startX + 120, startY + 72, 0xFF333333);
-            context.drawCenteredTextWithShadow(this.textRenderer, "+ Hesap Ekle", startX + 60, startY + 56, 0x55FF55);
+            context.drawCenteredTextWithShadow(this.textRenderer, "+ Offline Ekle", startX + 60, startY + 56, 0x55FF55);
 
             context.fill(startX + 130, startY + 48, startX + 250, startY + 72, 0xFF333333);
             context.drawCenteredTextWithShadow(this.textRenderer, "🗑️ Seçileni Sil", startX + 190, startY + 56, 0xFF5555);
 
-            context.drawTextWithShadow(this.textRenderer, "Kayıtlı Hesaplar:", startX, startY + 82, 0xAAAAAA);
+            context.drawTextWithShadow(this.textRenderer, "Kayıtlı çevrimdışı profiller:", startX, startY + 82, 0xAAAAAA);
+            context.drawTextWithShadow(this.textRenderer, "§7Not: Bu liste Microsoft oturumunu değiştirmez.", startX, startY + 224, 0xAAAAAA);
             int accY = startY + 98;
             for (String acc : AxoHileClient.accountList) {
                 boolean isSel = acc.equals(AxoHileClient.selectedAccount);
@@ -242,16 +243,19 @@ public class AxoHileMenuScreen extends Screen {
         }
         else if (selectedCategory.equals("Accounts")) {
             if (mouseX >= startX && mouseX <= startX + 120 && mouseY >= startY + 48 && mouseY <= startY + 72) {
-                if (!AxoHileClient.typedAccountInput.isEmpty() && !AxoHileClient.accountList.contains(AxoHileClient.typedAccountInput)) {
-                    AxoHileClient.accountList.add(AxoHileClient.typedAccountInput);
-                    AxoHileClient.selectedAccount = AxoHileClient.typedAccountInput;
+                String offlineName = AxoHileClient.typedAccountInput.trim();
+                if (offlineName.matches("[A-Za-z0-9_]{3,16}") && !AxoHileClient.accountList.contains(offlineName)) {
+                    AxoHileClient.accountList.add(offlineName);
+                    AxoHileClient.selectedAccount = offlineName;
                     AxoHileClient.typedAccountInput = "";
+                    AxoHileClient.saveOfflineAccounts();
                 }
             }
             else if (mouseX >= startX + 130 && mouseX <= startX + 250 && mouseY >= startY + 48 && mouseY <= startY + 72) {
                 if (!AxoHileClient.selectedAccount.isEmpty()) {
                     AxoHileClient.accountList.remove(AxoHileClient.selectedAccount);
                     AxoHileClient.selectedAccount = AxoHileClient.accountList.isEmpty() ? "" : AxoHileClient.accountList.get(0);
+                    AxoHileClient.saveOfflineAccounts();
                 }
             }
             int accY = startY + 98;
@@ -277,7 +281,7 @@ public class AxoHileMenuScreen extends Screen {
     @Override
     public boolean charTyped(char chr, int modifiers) {
         if (selectedCategory.equals("Accounts")) {
-            if (chr >= 32 && chr < 127) {
+            if (chr >= 32 && chr < 127 && AxoHileClient.typedAccountInput.length() < 16) {
                 AxoHileClient.typedAccountInput += chr;
                 return true;
             }
