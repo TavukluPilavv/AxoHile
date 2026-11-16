@@ -74,7 +74,6 @@ public class AxoHileClient implements ClientModInitializer {
         }
 
         if (target != null) {
-            // Hedefe odaklanma (Bypass uyumlu yumuşak rotasyon)
             aimAtTargetBypass(client.player, target);
 
             boolean isWPressed = GLFW.glfwGetKey(client.getWindow().getHandle(), GLFW.GLFW_KEY_W) == GLFW.GLFW_PRESS;
@@ -82,30 +81,24 @@ public class AxoHileClient implements ClientModInitializer {
                 trackTargetMovement(client.player, target);
             }
 
-            // Kalkan Kırma Otomasyonu (Balta Modu Açık / Kapalı)
             handleShieldBreaker(client, target);
 
-            // Full Hit Mantığı (Zıplama ve Vuruş Süresi Kontrolü)
             if (fullHitEnabled) {
-                // Açıkken: Yalnızca havada/düşerken ve cooldown tam doluyken vurur
                 if (!client.player.isOnGround() && client.player.fallDistance > 0.0f) {
                     if (client.player.getAttackCooldownProgress(0.5f) >= 0.92f) {
                         client.interactionManager.attackEntity(client.player, target);
                         client.player.swingHand(Hand.MAIN_HAND);
                     }
                 } else if (client.player.isOnGround() && !client.player.isSubmergedInWater() && client.player.hurtTime == 0) {
-                    // Vurabilmek için otomatik zıplama desteği
                     client.player.jump();
                 }
             } else {
-                // Kapalıyken: Normal Kill Aura gibi cooldown dolunca direkt vurur
                 if (client.player.getAttackCooldownProgress(0.5f) >= 0.92f) {
                     client.interactionManager.attackEntity(client.player, target);
                     client.player.swingHand(Hand.MAIN_HAND);
                 }
             }
         } else {
-            // Hedef yoksa orijinal eşyaya geri dön
             restorePreviousItem(client);
         }
     }
@@ -115,7 +108,6 @@ public class AxoHileClient implements ClientModInitializer {
 
         if (targetIsBlocking) {
             if (shieldBreakerAxeMode) {
-                // Balta modu açık: Baltayı bul, slot değiştir
                 for (int i = 0; i < 9; i++) {
                     if (client.player.getInventory().getStack(i).getItem() instanceof AxeItem) {
                         if (previousSlot == -1 && !(client.player.getInventory().getMainHandStack().getItem() instanceof AxeItem)) {
@@ -126,11 +118,9 @@ public class AxoHileClient implements ClientModInitializer {
                     }
                 }
             } else {
-                // Balta modu kapalı: Elindeki mevcut eşya (kılıç vb.) ile kalkanı kırmaya çalışır
                 restorePreviousItem(client);
             }
         } else {
-            // Hedef kalkan tutmuyorsa önceki silaha (kılıca) otomatik geri dön
             restorePreviousItem(client);
         }
     }
@@ -156,14 +146,15 @@ public class AxoHileClient implements ClientModInitializer {
             }
         }
 
-        // HATA DÜZELTMESİ BURADA YAPILDI: fallFlying() yerine isFallFlying() kullanıldı
-        if (target != null && client.player.isFallFlying()) {
+        // Sürüm hatası vermemesi için güvenli havada süzülme kontrolü (fallDistance ve yer üstünde olma durumu)
+        boolean isGlidingSafely = !client.player.isOnGround() && client.player.fallDistance > 1.0f;
+
+        if (target != null && isGlidingSafely) {
             aimAtTargetBypass(client.player, (LivingEntity) target);
         }
 
-        // Oto Fişek Hız Ayarı (1 ile 10 arası scale edilir, 1 yavaş, 10 çok seri basar)
         int tickInterval = Math.max(2, 22 - (autoFireworkSpeed * 2)); 
-        if (client.player.isFallFlying() && client.player.age % tickInterval == 0) {
+        if (isGlidingSafely && client.player.age % tickInterval == 0) {
             useFirework(client);
         }
     }
@@ -213,7 +204,6 @@ public class AxoHileClient implements ClientModInitializer {
         float yawDelta = wrapDegrees(targetYaw - player.getYaw());
         float pitchDelta = targetPitch - player.getPitch();
 
-        // Anticheat Bypass Moduna göre açı yumuşatma (Smooth Rotation)
         float smoothing = bypassType.equals("Grim") ? 0.45f : 0.75f;
 
         player.setYaw(player.getYaw() + yawDelta * smoothing);
