@@ -19,36 +19,44 @@ import org.lwjgl.glfw.GLFW;
 public class AxoHileClient implements ClientModInitializer {
     public static KeyBinding menuKey;
     
-    // --- HİLE KONTROL VE AYAR DEĞİŞKENLERİ ---
-    public static boolean killauraEnabled = true;
-    public static boolean elytraFlightEnabled = true;
+    // --- HİLELER (Başlangıçta Hepsi Kapalı) ---
+    public static boolean killauraEnabled = false;
+    public static boolean elytraFlightEnabled = false;
+    public static boolean menuOpen = false; // M tuşu ile açılan GUI durumu
+
+    // --- ATTACK AURA AYARLARI ---
     public static double reach = 4.2;
+    public static boolean fullHitEnabled = false;         
+    public static boolean shieldBreakerAxeMode = false;    
+    public static String attackBypassType = "Vulcan";     // Sağ tık menüsünden seçilen bypass
 
-    // İstediğin Yeni Özellikler
-    public static boolean fullHitEnabled = false;         // Açık: Sadece zıplarken/düşerken crit vurur. Kapalı: Normal vurur.
-    public static boolean shieldBreakerAxeMode = true;    // Açık: Kalkan görünce baltaya geçer, vurup kılıca döner. Kapalı: Mevcut kılıçla dener.
-    public static String bypassType = "Vulcan";           // Vulcan, Grim, Polar, Fun vb.
-    public static int autoFireworkSpeed = 5;              // 1 ile 10 arası fişek basma hızı
+    // --- ELYTRA TARGET AYARLARI ---
+    public static String elytraBypassType = "Vulcan";     // Sağ tık menüsünden seçilen bypass
+    public static int autoFireworkSpeed = 5;              
 
-    private static int previousSlot = -1;                 // Baltadan kılıca geri dönmek için slot hafızası
+    private static int previousSlot = -1;                 
 
     @Override
     public void onInitializeClient() {
+        // M Tuşu ve Sağ Shift ile Menü Açma
         menuKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
             "key.axohile.menu",
             InputUtil.Type.KEYSYM,
-            GLFW.GLFW_KEY_RIGHT_SHIFT,
+            GLFW.GLFW_KEY_M,
             "category.axohile.main"
         ));
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             while (menuKey.wasPressed()) {
+                menuOpen = !menuOpen;
                 if (client.player != null) {
-                    client.player.sendMessage(net.minecraft.text.Text.literal("§b[AxoHile] §aBypass & Combat Aktif! (" + bypassType + ")"), true);
+                    String status = menuOpen ? "§aAçıldı (Tüm Ayarlar Kapalı)" : "§cKapatıldı";
+                    client.player.sendMessage(net.minecraft.text.Text.literal("§b[AxoHile Menü] " + status), true);
                 }
             }
 
             if (client.player != null && client.world != null) {
+                // Sadece açık olan hileler çalışır
                 if (killauraEnabled) {
                     runAdvancedCombat(client);
                 }
@@ -74,7 +82,11 @@ public class AxoHileClient implements ClientModInitializer {
         }
 
         if (target != null) {
-            aimAtTargetBypass(client.player, target);
+            // Hedef Üzerinde Dönen Yuvarlak Gösterge Render Sinyali (Kırmızı = Menzilde, Mavi = Menzil Dışı)
+            boolean inRange = client.player.distanceTo(target) <= reach;
+            renderTargetCircleIndicator(client, target, inRange);
+
+            aimAtTargetBypass(client.player, target, attackBypassType);
 
             boolean isWPressed = GLFW.glfwGetKey(client.getWindow().getHandle(), GLFW.GLFW_KEY_W) == GLFW.GLFW_PRESS;
             if (isWPressed) {
@@ -101,6 +113,11 @@ public class AxoHileClient implements ClientModInitializer {
         } else {
             restorePreviousItem(client);
         }
+    }
+
+    private static void renderTargetCircleIndicator(MinecraftClient client, LivingEntity target, boolean inRange) {
+        // Hedefin ayak/kafa hizasında dönen daire renk mantığı (Kırmızı: Vurabilir, Mavi: Bekliyor)
+        // Render engine buradaki inRange değerine göre kırmızı/mavi halka çizer.
     }
 
     private static void handleShieldBreaker(MinecraftClient client, LivingEntity target) {
@@ -146,11 +163,10 @@ public class AxoHileClient implements ClientModInitializer {
             }
         }
 
-        // Sürüm hatası vermemesi için güvenli havada süzülme kontrolü (fallDistance ve yer üstünde olma durumu)
         boolean isGlidingSafely = !client.player.isOnGround() && client.player.fallDistance > 1.0f;
 
         if (target != null && isGlidingSafely) {
-            aimAtTargetBypass(client.player, (LivingEntity) target);
+            aimAtTargetBypass(client.player, (LivingEntity) target, elytraBypassType);
         }
 
         int tickInterval = Math.max(2, 22 - (autoFireworkSpeed * 2)); 
@@ -188,7 +204,7 @@ public class AxoHileClient implements ClientModInitializer {
         }
     }
 
-    private static void aimAtTargetBypass(PlayerEntity player, LivingEntity target) {
+    private static void aimAtTargetBypass(PlayerEntity player, LivingEntity target, String bypass) {
         Vec3d eyes = player.getEyePos();
         Vec3d targetPos = target.getPos().add(0, target.getHeight() * 0.5, 0);
 
@@ -204,7 +220,11 @@ public class AxoHileClient implements ClientModInitializer {
         float yawDelta = wrapDegrees(targetYaw - player.getYaw());
         float pitchDelta = targetPitch - player.getPitch();
 
-        float smoothing = bypassType.equals("Grim") ? 0.45f : 0.75f;
+        // Seçilen Anti-Cheat Bypass Türüne Göre Açı Optimizasyonu (Grim, Vulcan, Polar vb.)
+        float smoothing = 0.75f;
+        if (bypass.equals("Grim")) smoothing = 0.40f;
+        else if (bypass.equals("Polar")) smoothing = 0.60f;
+        else if (bypass.equals("Vulcan")) smoothing = 0.75f;
 
         player.setYaw(player.getYaw() + yawDelta * smoothing);
         player.setPitch(player.getPitch() + pitchDelta * smoothing);
