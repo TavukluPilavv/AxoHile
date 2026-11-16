@@ -265,7 +265,7 @@ public class AxoHileClient implements ClientModInitializer {
         }
     }
 
-    // --- TEK MERKEZLİ ÇAKIŞMASIZ COOLDOWN VE KRİTİK SAVAŞ SİSTEMİ ---
+    // --- KESİN KRİTİK VE COOLDOWN SAVAŞ SİSTEMİ ---
     private static void runAdvancedCombat(MinecraftClient client) {
         if (client.player == null || client.interactionManager == null) return;
 
@@ -278,7 +278,7 @@ public class AxoHileClient implements ClientModInitializer {
                 trackTargetMovement(client.player, target);
             }
 
-            // 1. Kalkan Kırma & Balta Yönetimi (Sadece slot seçer, vuruş yapmaz)
+            // Kalkan Kırma & Balta Yönetimi
             boolean targetIsBlocking = target.isUsingItem() && target.getActiveItem().isOf(Items.SHIELD);
             if (targetIsBlocking && shieldBreakerAxeMode) {
                 for (int i = 0; i < 9; i++) {
@@ -294,20 +294,20 @@ public class AxoHileClient implements ClientModInitializer {
                 restorePreviousItem(client);
             }
 
-            // 2. Minecraft'ın Kendi Tam Cooldown (1.0f) ve Kritik Kontrolü (Asla spam atmaz)
-            if (client.player.getAttackCooldownProgress(0.5f) >= 1.0f) {
-                if (fullHitEnabled) {
-                    // Full Hit Açıkken: Yerdeyse zıpla, havada düşerken ve tüm crit koşulları tutuyorsa vur
-                    if (client.player.isOnGround()) {
-                        client.player.jump();
-                    } else if (canCriticalHit(client.player)) {
-                        client.player.setSprinting(false);
-                        client.interactionManager.attackEntity(client.player, target);
-                        client.player.swingHand(Hand.MAIN_HAND);
-                        restorePreviousItem(client);
-                    }
-                } else {
-                    // Full Hit Kapalıyken: Normal yerde tam cooldown dolduğunda düz vurur, asla spam yapmaz
+            // Full Hit ve Cooldown Mantığı
+            if (fullHitEnabled) {
+                // Full Hit Açıkken: Yerdeyse zıpla, havadayken (düşerken/süzülürken) cooldown dolunca crit vur
+                if (client.player.isOnGround()) {
+                    client.player.jump();
+                } else if (client.player.getAttackCooldownProgress(0.5f) >= 0.90f) {
+                    client.player.setSprinting(false);
+                    client.interactionManager.attackEntity(client.player, target);
+                    client.player.swingHand(Hand.MAIN_HAND);
+                    restorePreviousItem(client);
+                }
+            } else {
+                // Full Hit Kapalıyken: Normal yerde cooldown dolduğunda düz vurur, asla spam yapmaz
+                if (client.player.getAttackCooldownProgress(0.5f) >= 0.98f) {
                     client.interactionManager.attackEntity(client.player, target);
                     client.player.swingHand(Hand.MAIN_HAND);
                     restorePreviousItem(client);
@@ -316,16 +316,6 @@ public class AxoHileClient implements ClientModInitializer {
         } else {
             restorePreviousItem(client);
         }
-    }
-
-    // Minecraft'ın gerçek kritik vuruş koşullarını doğrulayan güvenli metot
-    private static boolean canCriticalHit(PlayerEntity player) {
-        return !player.isOnGround()
-                && player.fallDistance > 0.0f
-                && player.getVelocity().y < 0.0
-                && !player.isClimbing()
-                && !player.isTouchingWater()
-                && !player.hasVehicle();
     }
 
     private static LivingEntity getBestTarget(MinecraftClient client, double range) {
