@@ -24,12 +24,17 @@ public class AxoHileMenuScreen extends Screen {
 
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
+        // Bulanıklık YOK, net koyu arkaplan
+        context.fill(0, 0, this.width, this.height, 0x80000000);
+
+        // Ana Menü Çerçevesi
         context.fill(this.width / 2 - 180, this.height / 2 - 120, this.width / 2 + 180, this.height / 2 + 120, 0xF0101010);
         
+        // Sol Kategori Paneli
         context.fill(this.width / 2 - 180, this.height / 2 - 120, this.width / 2 - 95, this.height / 2 + 120, 0xF0181818);
         context.drawTextWithShadow(this.textRenderer, "§bVexionClient", this.width / 2 - 170, this.height / 2 - 105, 0xFFFFFF);
 
-        String[] categories = {"Combat", "Move", "Render", "Player", "Themes"};
+        String[] categories = {"Combat", "Move", "Render", "Accounts", "Themes"};
         int catY = this.height / 2 - 70;
         for (String cat : categories) {
             boolean isSelected = selectedCategory.equals(cat);
@@ -109,6 +114,28 @@ public class AxoHileMenuScreen extends Screen {
             context.drawTextWithShadow(this.textRenderer, "🎯 TargetHUD", startX + 10, startY + 128, targetColor);
             context.drawTextWithShadow(this.textRenderer, AxoHileClient.hudTargetHud ? "AÇIK" : "KAPALI", startX + 200, startY + 128, targetColor);
         }
+        else if (selectedCategory.equals("Accounts")) {
+            context.drawTextWithShadow(this.textRenderer, "§e[Account Manager - Hesap Yönetimi]", startX, startY, 0xFFFFFF);
+            
+            context.fill(startX, startY + 18, startX + 250, startY + 42, 0x80202020);
+            context.drawTextWithShadow(this.textRenderer, "İsim: " + AxoHileClient.typedAccountInput + "_", startX + 10, startY + 26, 0xFFFFFF);
+
+            context.fill(startX, startY + 48, startX + 120, startY + 72, 0xFF333333);
+            context.drawCenteredTextWithShadow(this.textRenderer, "+ Hesap Ekle", startX + 60, startY + 56, 0x55FF55);
+
+            context.fill(startX + 130, startY + 48, startX + 250, startY + 72, 0xFF333333);
+            context.drawCenteredTextWithShadow(this.textRenderer, "🗑️ Seçileni Sil", startX + 190, startY + 56, 0xFF5555);
+
+            context.drawTextWithShadow(this.textRenderer, "Kayıtlı Hesaplar:", startX, startY + 82, 0xAAAAAA);
+            int accY = startY + 98;
+            for (String acc : AxoHileClient.accountList) {
+                boolean isSel = acc.equals(AxoHileClient.selectedAccount);
+                int bg = isSel ? 0xFF224488 : 0x80252525;
+                context.fill(startX, accY, startX + 250, accY + 20, bg);
+                context.drawTextWithShadow(this.textRenderer, (isSel ? "▶ " : "• ") + acc, startX + 10, accY + 6, isSel ? 0x55FFFF : 0xFFFFFF);
+                accY += 24;
+            }
+        }
         else if (selectedCategory.equals("Themes")) {
             context.drawTextWithShadow(this.textRenderer, "§e[Temalar & Renkler]", startX, startY, 0xFFFFFF);
             
@@ -136,7 +163,7 @@ public class AxoHileMenuScreen extends Screen {
         if (awaitingKeyBind) return super.mouseClicked(mouseX, mouseY, button);
 
         if (mouseX >= centerX - 180 && mouseX <= centerX - 95) {
-            String[] categories = {"Combat", "Move", "Render", "Player", "Themes"};
+            String[] categories = {"Combat", "Move", "Render", "Accounts", "Themes"};
             int catY = centerY - 70;
             for (String cat : categories) {
                 if (mouseY >= catY && mouseY <= catY + 18) {
@@ -210,6 +237,28 @@ public class AxoHileMenuScreen extends Screen {
                 if (mouseY >= startY + 123 && mouseY <= startY + 146) AxoHileClient.hudTargetHud = !AxoHileClient.hudTargetHud;
             }
         }
+        else if (selectedCategory.equals("Accounts")) {
+            if (mouseX >= startX && mouseX <= startX + 120 && mouseY >= startY + 48 && mouseY <= startY + 72) {
+                if (!AxoHileClient.typedAccountInput.isEmpty() && !AxoHileClient.accountList.contains(AxoHileClient.typedAccountInput)) {
+                    AxoHileClient.accountList.add(AxoHileClient.typedAccountInput);
+                    AxoHileClient.selectedAccount = AxoHileClient.typedAccountInput;
+                    AxoHileClient.typedAccountInput = "";
+                }
+            }
+            else if (mouseX >= startX + 130 && mouseX <= startX + 250 && mouseY >= startY + 48 && mouseY <= startY + 72) {
+                if (!AxoHileClient.selectedAccount.isEmpty()) {
+                    AxoHileClient.accountList.remove(AxoHileClient.selectedAccount);
+                    AxoHileClient.selectedAccount = AxoHileClient.accountList.isEmpty() ? "" : AxoHileClient.accountList.get(0);
+                }
+            }
+            int accY = startY + 98;
+            for (String acc : AxoHileClient.accountList) {
+                if (mouseX >= startX && mouseX <= startX + 250 && mouseY >= accY && mouseY <= accY + 20) {
+                    AxoHileClient.selectedAccount = acc;
+                }
+                accY += 24;
+            }
+        }
         else if (selectedCategory.equals("Themes")) {
             if (mouseX >= startX + 10 && mouseX <= startX + 60 && mouseY >= startY + 20 && mouseY <= startY + 70) AxoHileClient.themeColor = 0xFFFF5555;
             if (mouseX >= startX + 70 && mouseX <= startX + 120 && mouseY >= startY + 20 && mouseY <= startY + 70) AxoHileClient.themeColor = 0xFF5555FF;
@@ -223,12 +272,29 @@ public class AxoHileMenuScreen extends Screen {
     }
 
     @Override
+    public boolean charTyped(char chr, int modifiers) {
+        if (selectedCategory.equals("Accounts")) {
+            if (chr >= 32 && chr < 127) {
+                AxoHileClient.typedAccountInput += chr;
+                return true;
+            }
+        }
+        return super.charTyped(chr, modifiers);
+    }
+
+    @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
         if (awaitingKeyBind) {
             if (moduleToBind.equals("AttackAura")) AxoHileClient.attackAuraKey = keyCode;
             else if (moduleToBind.equals("ElytraTarget")) AxoHileClient.elytraKey = keyCode;
             awaitingKeyBind = false;
             return true;
+        }
+        if (selectedCategory.equals("Accounts")) {
+            if (keyCode == GLFW.GLFW_KEY_BACKSPACE && !AxoHileClient.typedAccountInput.isEmpty()) {
+                AxoHileClient.typedAccountInput = AxoHileClient.typedAccountInput.substring(0, AxoHileClient.typedAccountInput.length() - 1);
+                return true;
+            }
         }
         if (keyCode == GLFW.GLFW_KEY_ESCAPE) {
             this.close();
