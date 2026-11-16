@@ -44,8 +44,8 @@ public class AxoHileClient implements ClientModInitializer {
     public static String elytraBypassType = "Vulcan";     
     public static int autoFireworkSpeed = 5;              
 
-    // --- AUTOTOTEM AYARLARI ---
-    public static int autoTotemHealth = 3; // 3 kalp
+    // --- AUTOTOTEM AYARLARI (3 Kalp = 6 Can) ---
+    public static int autoTotemHealth = 3; 
     private static ItemStack savedOffhandStack = ItemStack.EMPTY;
     private static boolean restoredOffhand = true;
 
@@ -114,7 +114,7 @@ public class AxoHileClient implements ClientModInitializer {
             }
         });
 
-        // HUD Render & Shift + Sol Tık ile Sürükleme Mantığı (GLFW Shift Düzeltmesi Yapıldı)
+        // HUD Render & Shift + Sol Tık ile Sürükleme Mantığı
         HudRenderCallback.EVENT.register((context, tickDelta) -> {
             MinecraftClient client = MinecraftClient.getInstance();
             if (client.player == null || client.options.hudHidden) return;
@@ -256,6 +256,7 @@ public class AxoHileClient implements ClientModInitializer {
                 }
             }
         } else {
+            // Can dolduğunda totemden önceki eski eşyayı offhand'e geri koy
             if (!restoredOffhand && !savedOffhandStack.isEmpty()) {
                 for (int i = 0; i < 36; i++) {
                     if (client.player.getInventory().getStack(i).isEmpty()) {
@@ -282,6 +283,7 @@ public class AxoHileClient implements ClientModInitializer {
 
             handleShieldBreakerAndAttack(client, target);
 
+            // KESİN COOLDOWN KURALI: Asla spam atmaz, tam dolumda vurur.
             if (client.player.getAttackCooldownProgress(0.5f) >= 0.98f) {
                 if (fullHitEnabled) {
                     if (!client.player.isOnGround() && client.player.fallDistance > 0.0f) {
@@ -334,6 +336,7 @@ public class AxoHileClient implements ClientModInitializer {
                     }
                 }
             } else {
+                // Balta kapalıyken kılıçla kalkanı kırıp vurur
                 if (client.player.getAttackCooldownProgress(0.5f) >= 0.98f) {
                     client.interactionManager.attackEntity(client.player, target);
                     client.player.swingHand(Hand.MAIN_HAND);
@@ -423,6 +426,7 @@ public class AxoHileClient implements ClientModInitializer {
         float yawDelta = wrapDegrees(targetYaw - player.getYaw());
         float pitchDelta = targetPitch - player.getPitch();
 
+        // Sarsıntısız ve serbest bakışa izin veren esnek sönümleme
         float smoothing = bypass.equals("Grim") ? 0.20f : 0.40f;
 
         player.setYaw(player.getYaw() + yawDelta * smoothing);
