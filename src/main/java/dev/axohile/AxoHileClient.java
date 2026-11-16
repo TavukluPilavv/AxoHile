@@ -167,7 +167,7 @@ public class AxoHileClient implements ClientModInitializer {
 
         if (fireworkSlot == -1) {
             for (int i = 9; i < 36; i++) {
-                if (client.player.getInventory().getStack(i).getItem() instanceof FireworkRocketItem || client.player.getInventory().getStack(i).isOf(Items.FIREWORK_ROCKET)) {
+                if (client.player.getInventory().getStack(i).isOf(Items.FIREWORK_ROCKET)) {
                     client.interactionManager.clickSlot(client.player.playerScreenHandler.syncId, i, 0, SlotActionType.SWAP, client.player);
                     fireworkSlot = 0;
                     break;
