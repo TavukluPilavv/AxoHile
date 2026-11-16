@@ -24,6 +24,9 @@ public class AxoHileMenuScreen extends Screen {
 
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
+        // Önce Minecraft ekran arka planını çiz; özel menü bunun üstünde kalmalı.
+        super.render(context, mouseX, mouseY, delta);
+
         // Net, bulaniksiz arka plan
         context.fill(0, 0, this.width, this.height, 0xFF000000);
 
@@ -151,7 +154,6 @@ public class AxoHileMenuScreen extends Screen {
             context.drawCenteredTextWithShadow(this.textRenderer, "§e" + moduleToBind + " için bir tuşa basın...", this.width / 2, this.height / 2 - 10, 0xFFFFFF);
         }
 
-        super.render(context, mouseX, mouseY, delta);
     }
 
     @Override
