@@ -24,7 +24,7 @@ public class AxoHileMenuScreen extends Screen {
 
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
-        // Net ve bulaniksiz arka plan: arka planda blur/post-process kullanilmaz.
+        // Net, bulaniksiz arka plan
         context.fill(0, 0, this.width, this.height, 0xFF000000);
 
         context.fill(this.width / 2 - 180, this.height / 2 - 120, this.width / 2 + 180, this.height / 2 + 120, 0xF0101010);
@@ -45,87 +45,87 @@ public class AxoHileMenuScreen extends Screen {
         int startY = this.height / 2 - 105;
 
         if (selectedCategory.equals("Combat")) {
-            context.drawTextWithShadow(this.textRenderer, "§e[Combat Modulleri]", startX, startY, 0xFFFFFF);
+            context.drawTextWithShadow(this.textRenderer, "§e[Combat Modülleri]", startX, startY, 0xFFFFFF);
 
             int auraColor = AxoHileClient.killauraEnabled ? AxoHileClient.themeColor : 0xFFFFFFFF;
             context.fill(startX, startY + 15, startX + 250, startY + 45, 0x80202020);
-            context.drawTextWithShadow(this.textRenderer, "AttackAura", startX + 10, startY + 23, auraColor);
-            context.drawTextWithShadow(this.textRenderer, AxoHileClient.killauraEnabled ? "ACIK" : "KAPALI", startX + 200, startY + 23, auraColor);
+            context.drawTextWithShadow(this.textRenderer, "⚔️ AttackAura", startX + 10, startY + 23, auraColor);
+            context.drawTextWithShadow(this.textRenderer, AxoHileClient.killauraEnabled ? "AÇIK" : "KAPALI", startX + 200, startY + 23, auraColor);
 
             if (attackAuraSubMenu) {
                 context.fill(startX, startY + 47, startX + 250, startY + 115, 0x90151515);
                 context.drawTextWithShadow(this.textRenderer, "Bypass: " + AxoHileClient.attackBypassType, startX + 15, startY + 55, 0xCCCCCC);
-                context.drawTextWithShadow(this.textRenderer, "Full Hit: " + (AxoHileClient.fullHitEnabled ? "Zipla & Crit" : "Normal (Cooldown)"), startX + 15, startY + 75, 0xCCCCCC);
-                context.drawTextWithShadow(this.textRenderer, "Balta Kalkan: " + (AxoHileClient.shieldBreakerAxeMode ? "Acik" : "Kapali"), startX + 15, startY + 95, 0xCCCCCC);
+                context.drawTextWithShadow(this.textRenderer, "Full Hit: " + (AxoHileClient.fullHitEnabled ? "Zıpla & Crit" : "Normal (Cooldown)"), startX + 15, startY + 75, 0xCCCCCC);
+                context.drawTextWithShadow(this.textRenderer, "Balta Kalkan: " + (AxoHileClient.shieldBreakerAxeMode ? "Açık" : "Kapalı"), startX + 15, startY + 95, 0xCCCCCC);
             }
 
             int elytraBoxY = attackAuraSubMenu ? startY + 125 : startY + 55;
             int elytraColor = AxoHileClient.elytraFlightEnabled ? AxoHileClient.themeColor : 0xFFFFFFFF;
             context.fill(startX, elytraBoxY, startX + 250, elytraBoxY + 30, 0x80202020);
-            context.drawTextWithShadow(this.textRenderer, "ElytraTarget", startX + 10, elytraBoxY + 8, elytraColor);
-            context.drawTextWithShadow(this.textRenderer, AxoHileClient.elytraFlightEnabled ? "ACIK" : "KAPALI", startX + 200, elytraBoxY + 8, elytraColor);
+            context.drawTextWithShadow(this.textRenderer, "🦅 ElytraTarget", startX + 10, elytraBoxY + 8, elytraColor);
+            context.drawTextWithShadow(this.textRenderer, AxoHileClient.elytraFlightEnabled ? "AÇIK" : "KAPALI", startX + 200, elytraBoxY + 8, elytraColor);
 
             if (elytraTargetSubMenu) {
                 context.fill(startX, elytraBoxY + 32, startX + 250, elytraBoxY + 95, 0x90151515);
                 context.drawTextWithShadow(this.textRenderer, "Bypass: " + AxoHileClient.elytraBypassType, startX + 15, elytraBoxY + 40, 0xCCCCCC);
-                context.drawTextWithShadow(this.textRenderer, "Oto Firework Hizı: " + AxoHileClient.autoFireworkSpeed + "/10", startX + 15, elytraBoxY + 60, 0xCCCCCC);
+                context.drawTextWithShadow(this.textRenderer, "Oto Fişek Hızı: " + AxoHileClient.autoFireworkSpeed + "/10", startX + 15, elytraBoxY + 60, 0xCCCCCC);
                 context.drawTextWithShadow(this.textRenderer, "Hedef Mesafe: " + AxoHileClient.elytraTargetRange + " Blok", startX + 15, elytraBoxY + 80, 0xCCCCCC);
             }
         } 
         else if (selectedCategory.equals("Move")) {
-            context.drawTextWithShadow(this.textRenderer, "§e[Move / Player Modulleri]", startX, startY, 0xFFFFFF);
+            context.drawTextWithShadow(this.textRenderer, "§e[Move / Player Modülleri]", startX, startY, 0xFFFFFF);
 
             int totemColor = AxoHileClient.autoTotemEnabled ? AxoHileClient.themeColor : 0xFFFFFFFF;
             context.fill(startX, startY + 15, startX + 250, startY + 45, 0x80202020);
-            context.drawTextWithShadow(this.textRenderer, "AutoTotem", startX + 10, startY + 23, totemColor);
-            context.drawTextWithShadow(this.textRenderer, AxoHileClient.autoTotemEnabled ? "ACIK" : "KAPALI", startX + 200, startY + 23, totemColor);
+            context.drawTextWithShadow(this.textRenderer, "🛡️ AutoTotem", startX + 10, startY + 23, totemColor);
+            context.drawTextWithShadow(this.textRenderer, AxoHileClient.autoTotemEnabled ? "AÇIK" : "KAPALI", startX + 200, startY + 23, totemColor);
 
             if (autoTotemSubMenu) {
                 context.fill(startX, startY + 47, startX + 250, startY + 85, 0x90151515);
-                context.drawTextWithShadow(this.textRenderer, "Can Esigi: " + AxoHileClient.autoTotemHealth + " Kalp", startX + 15, startY + 58, 0xCCCCCC);
+                context.drawTextWithShadow(this.textRenderer, "Can Eşiği: " + AxoHileClient.autoTotemHealth + " Kalp", startX + 15, startY + 58, 0xCCCCCC);
             }
         }
         else if (selectedCategory.equals("Render")) {
-            context.drawTextWithShadow(this.textRenderer, "§e[Render / HUD Bilesenleri]", startX, startY, 0xFFFFFF);
+            context.drawTextWithShadow(this.textRenderer, "§e[Render / HUD Bileşenleri]", startX, startY, 0xFFFFFF);
             
             int staffColor = AxoHileClient.hudStaffList ? AxoHileClient.themeColor : 0xFFFFFFFF;
             context.fill(startX, startY + 15, startX + 250, startY + 38, 0x80202020);
-            context.drawTextWithShadow(this.textRenderer, "Staff List", startX + 10, startY + 20, staffColor);
-            context.drawTextWithShadow(this.textRenderer, AxoHileClient.hudStaffList ? "ACIK" : "KAPALI", startX + 200, startY + 20, staffColor);
+            context.drawTextWithShadow(this.textRenderer, "📋 Staff List", startX + 10, startY + 20, staffColor);
+            context.drawTextWithShadow(this.textRenderer, AxoHileClient.hudStaffList ? "AÇIK" : "KAPALI", startX + 200, startY + 20, staffColor);
 
             int keyColor = AxoHileClient.hudKeybinds ? AxoHileClient.themeColor : 0xFFFFFFFF;
             context.fill(startX, startY + 42, startX + 250, startY + 65, 0x80202020);
-            context.drawTextWithShadow(this.textRenderer, "Keybinds", startX + 10, startY + 47, keyColor);
-            context.drawTextWithShadow(this.textRenderer, AxoHileClient.hudKeybinds ? "ACIK" : "KAPALI", startX + 200, startY + 47, keyColor);
+            context.drawTextWithShadow(this.textRenderer, "⌨️ Keybinds", startX + 10, startY + 47, keyColor);
+            context.drawTextWithShadow(this.textRenderer, AxoHileClient.hudKeybinds ? "AÇIK" : "KAPALI", startX + 200, startY + 47, keyColor);
 
             int potColor = AxoHileClient.hudPotions ? AxoHileClient.themeColor : 0xFFFFFFFF;
             context.fill(startX, startY + 69, startX + 250, startY + 92, 0x80202020);
-            context.drawTextWithShadow(this.textRenderer, "Potions", startX + 10, startY + 74, potColor);
-            context.drawTextWithShadow(this.textRenderer, AxoHileClient.hudPotions ? "ACIK" : "KAPALI", startX + 200, startY + 74, potColor);
+            context.drawTextWithShadow(this.textRenderer, "🧪 Potions", startX + 10, startY + 74, potColor);
+            context.drawTextWithShadow(this.textRenderer, AxoHileClient.hudPotions ? "AÇIK" : "KAPALI", startX + 200, startY + 74, potColor);
 
             int mainColor = AxoHileClient.hudMainMenu ? AxoHileClient.themeColor : 0xFFFFFFFF;
             context.fill(startX, startY + 96, startX + 250, startY + 119, 0x80202020);
-            context.drawTextWithShadow(this.textRenderer, "Ana Menu HUD", startX + 10, startY + 101, mainColor);
-            context.drawTextWithShadow(this.textRenderer, AxoHileClient.hudMainMenu ? "ACIK" : "KAPALI", startX + 200, startY + 101, mainColor);
+            context.drawTextWithShadow(this.textRenderer, "🖥️ Ana Menü HUD", startX + 10, startY + 101, mainColor);
+            context.drawTextWithShadow(this.textRenderer, AxoHileClient.hudMainMenu ? "AÇIK" : "KAPALI", startX + 200, startY + 101, mainColor);
 
             int targetColor = AxoHileClient.hudTargetHud ? AxoHileClient.themeColor : 0xFFFFFFFF;
             context.fill(startX, startY + 123, startX + 250, startY + 146, 0x80202020);
-            context.drawTextWithShadow(this.textRenderer, "TargetHUD", startX + 10, startY + 128, targetColor);
-            context.drawTextWithShadow(this.textRenderer, AxoHileClient.hudTargetHud ? "ACIK" : "KAPALI", startX + 200, startY + 128, targetColor);
+            context.drawTextWithShadow(this.textRenderer, "🎯 TargetHUD", startX + 10, startY + 128, targetColor);
+            context.drawTextWithShadow(this.textRenderer, AxoHileClient.hudTargetHud ? "AÇIK" : "KAPALI", startX + 200, startY + 128, targetColor);
         }
         else if (selectedCategory.equals("Accounts")) {
-            context.drawTextWithShadow(this.textRenderer, "§e[Account Manager - Hesap Yonetimi]", startX, startY, 0xFFFFFF);
+            context.drawTextWithShadow(this.textRenderer, "§e[Account Manager - Hesap Yönetimi]", startX, startY, 0xFFFFFF);
             
             context.fill(startX, startY + 18, startX + 250, startY + 42, 0x80202020);
-            context.drawTextWithShadow(this.textRenderer, "Isim: " + AxoHileClient.typedAccountInput + "_", startX + 10, startY + 26, 0xFFFFFF);
+            context.drawTextWithShadow(this.textRenderer, "İsim: " + AxoHileClient.typedAccountInput + "_", startX + 10, startY + 26, 0xFFFFFF);
 
             context.fill(startX, startY + 48, startX + 120, startY + 72, 0xFF333333);
             context.drawCenteredTextWithShadow(this.textRenderer, "+ Hesap Ekle", startX + 60, startY + 56, 0x55FF55);
 
             context.fill(startX + 130, startY + 48, startX + 250, startY + 72, 0xFF333333);
-            context.drawCenteredTextWithShadow(this.textRenderer, "Secileni Sil", startX + 190, startY + 56, 0xFF5555);
+            context.drawCenteredTextWithShadow(this.textRenderer, "🗑️ Seçileni Sil", startX + 190, startY + 56, 0xFF5555);
 
-            context.drawTextWithShadow(this.textRenderer, "Kayitli Hesaplar:", startX, startY + 82, 0xAAAAAA);
+            context.drawTextWithShadow(this.textRenderer, "Kayıtlı Hesaplar:", startX, startY + 82, 0xAAAAAA);
             int accY = startY + 98;
             for (String acc : AxoHileClient.accountList) {
                 boolean isSel = acc.equals(AxoHileClient.selectedAccount);
@@ -148,7 +148,7 @@ public class AxoHileMenuScreen extends Screen {
 
         if (awaitingKeyBind) {
             context.fill(this.width / 2 - 100, this.height / 2 - 30, this.width / 2 + 100, this.height / 2 + 30, 0xF0000000);
-            context.drawCenteredTextWithShadow(this.textRenderer, "§e" + moduleToBind + " icin bir tusa basin...", this.width / 2, this.height / 2 - 10, 0xFFFFFF);
+            context.drawCenteredTextWithShadow(this.textRenderer, "§e" + moduleToBind + " için bir tuşa basın...", this.width / 2, this.height / 2 - 10, 0xFFFFFF);
         }
 
         super.render(context, mouseX, mouseY, delta);
