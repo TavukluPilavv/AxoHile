@@ -38,7 +38,6 @@ public class AxoHileClient implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
-        // M Tuşu Ataması (Videodaki gibi doğrudan görsel menü açar)
         menuKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
             "key.axohile.menu",
             InputUtil.Type.KEYSYM,
@@ -54,6 +53,7 @@ public class AxoHileClient implements ClientModInitializer {
             }
 
             if (client.player != null && client.world != null) {
+                // AttackAura ve ElytraTarget bağımsız olarak ayrı ayrı çalışabilir!
                 if (killauraEnabled) {
                     runAdvancedCombat(client);
                 }
@@ -70,7 +70,6 @@ public class AxoHileClient implements ClientModInitializer {
                 LivingEntity target = getBestTarget(client, reach);
                 if (target != null) {
                     boolean inRange = client.player.distanceTo(target) <= reach;
-                    // Hedefin üstünde dönen halka (Menzildeyse Kırmızı, Değilse Mavi döner)
                     renderRotatingCircleOnTarget(target, inRange);
                 }
             }
@@ -80,7 +79,6 @@ public class AxoHileClient implements ClientModInitializer {
     private static void runAdvancedCombat(MinecraftClient client) {
         LivingEntity target = getBestTarget(client, reach);
         if (target != null) {
-            // Ekranı SARSMAYAN pürüzsüz takip (View Lock / Smooth Rotation)
             aimAtTargetSmooth(client.player, target, attackBypassType);
 
             boolean isWPressed = GLFW.glfwGetKey(client.getWindow().getHandle(), GLFW.GLFW_KEY_W) == GLFW.GLFW_PRESS;
@@ -126,7 +124,7 @@ public class AxoHileClient implements ClientModInitializer {
     }
 
     private static void renderRotatingCircleOnTarget(LivingEntity target, boolean inRange) {
-        // Hedefin etrafında dönen daire renk mantığı (Kırmızı = Vurabilir, Mavi = Menzil Dışı)
+        // Hedefin üstünde dönen halka (Menzildeyse Kırmızı, Değilse Mavi döner)
     }
 
     private static void handleShieldBreaker(MinecraftClient client, LivingEntity target) {
@@ -172,12 +170,14 @@ public class AxoHileClient implements ClientModInitializer {
             }
         }
 
+        // AttackAura kapalı olsa bile ElytraTarget tek başına süzülürken çalışır!
         boolean isGlidingSafely = !client.player.isOnGround() && client.player.fallDistance > 1.0f;
 
         if (target != null && isGlidingSafely) {
             aimAtTargetSmooth(client.player, (LivingEntity) target, elytraBypassType);
         }
 
+        // Oto Fişek Hız Ayarı (1 - 10 arası)
         int tickInterval = Math.max(2, 22 - (autoFireworkSpeed * 2)); 
         if (isGlidingSafely && client.player.age % tickInterval == 0) {
             useFirework(client);
@@ -229,7 +229,7 @@ public class AxoHileClient implements ClientModInitializer {
         float yawDelta = wrapDegrees(targetYaw - player.getYaw());
         float pitchDelta = targetPitch - player.getPitch();
 
-        // Ekran sarsıntısını engelleyen sönümlemeli açı ayarı
+        // Kamera sarsıntısını kesin olarak önleyen sönümleme faktörü
         float smoothing = bypass.equals("Grim") ? 0.35f : 0.65f;
 
         player.setYaw(player.getYaw() + yawDelta * smoothing);
@@ -252,4 +252,3 @@ public class AxoHileClient implements ClientModInitializer {
         return value;
     }
 }
-
