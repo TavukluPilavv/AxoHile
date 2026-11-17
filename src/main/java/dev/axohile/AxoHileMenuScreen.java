@@ -13,6 +13,7 @@ public class AxoHileMenuScreen extends Screen {
     private boolean awaitingKeyBind = false;
     private String moduleToBind = "";
     private String accountInput = "";
+    private String accountInput = "";
 
     public AxoHileMenuScreen() {
         super(Text.literal("VexionClient Menu"));
@@ -240,10 +241,10 @@ public class AxoHileMenuScreen extends Screen {
         }
         else if (selectedCategory.equals("Accounts")) {
             if (mouseX >= startX && mouseX <= startX + 120 && mouseY >= startY + 48 && mouseY <= startY + 72) {
-                String offlineName = AxoHileClient.typedAccountInput.trim();
-                if (offlineName.matches("[A-Za-z0-9_]{3,16}") && !AxoHileClient.accountList.contains(offlineName)) {
+                String offlineName = accountInput.trim();
+                if (offlineName.matches("[A-Za-z0-9_]{3,16}") && !VexionAccountStore.getAccounts().contains(offlineName)) {
                     AxoHileClient.accountList.add(offlineName);
-                    AxoHileClient.selectedAccount = offlineName;
+                    VexionAccountStore.getSelected() = offlineName;
                     AxoHileClient.typedAccountInput = "";
                     AxoHileClient.saveOfflineAccounts();
                 }
