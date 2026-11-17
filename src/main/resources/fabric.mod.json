@@ -2,13 +2,14 @@
   "schemaVersion": 1,
   "id": "axohile",
   "version": "${version}",
-  "name": "AxoHile",
-  "description": "A Minecraft 1.21.4 Fabric client mod.",
+  "name": "Vexion Client",
+  "description": "Vexion Client custom main menu for Minecraft 1.21.4 Fabric.",
   "authors": ["TavukluPilavv"],
   "environment": "client",
   "entrypoints": {
     "client": [
-      "dev.axohile.AxoHileClient"
+      "dev.axohile.AxoHileClient",
+      "dev.axohile.VexionMenuEntrypoint"
     ]
   },
   "depends": {
