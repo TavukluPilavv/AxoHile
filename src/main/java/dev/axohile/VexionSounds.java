@@ -6,7 +6,7 @@ import net.minecraft.sound.SoundEvent;
 import net.minecraft.util.Identifier;
 
 public final class VexionSounds {
-    public static final Identifier WELCOME_ID = Identifier.of("axohile", "welcome");
+    public static final Identifier WELCOME_ID = Identifier.of("axohile", "vexion_welcome");
     public static final SoundEvent WELCOME = SoundEvent.of(WELCOME_ID);
 
     private VexionSounds() {}

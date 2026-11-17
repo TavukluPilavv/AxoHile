@@ -24,11 +24,7 @@ public class AxoHileMenuScreen extends Screen {
 
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
-        // Önce Minecraft ekran arka planını çiz; özel menü bunun üstünde kalmalı.
-        super.render(context, mouseX, mouseY, delta);
-
-        // Net, bulaniksiz arka plan
-        context.fill(0, 0, this.width, this.height, 0xFF000000);
+        VexionBackgroundRenderer.render(context, this.width, this.height);
 
         context.fill(this.width / 2 - 180, this.height / 2 - 120, this.width / 2 + 180, this.height / 2 + 120, 0xF0101010);
         

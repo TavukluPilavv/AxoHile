@@ -6,7 +6,7 @@ import net.minecraft.util.Identifier;
 
 public final class VexionBackgroundRenderer {
     private static final Identifier BACKGROUND =
-            Identifier.of("axohile", "textures/gui/vexion_background.jpg");
+            Identifier.of("axohile", "textures/gui/vexion_menu_background.jpg");
 
     private VexionBackgroundRenderer() {}
 
