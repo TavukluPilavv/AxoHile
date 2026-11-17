@@ -1,0 +1,26 @@
+{
+  "welcome": {
+    "sounds": [
+      {
+        "name": "axohile:welcome",
+        "stream": false
+      }
+    ]
+  },
+  "vexion_welcome": {
+    "sounds": [
+      {
+        "name": "axohile:vexion_welcome",
+        "stream": false
+      }
+    ]
+  },
+  "main_menu_welcome": {
+    "sounds": [
+      {
+        "name": "axohile:main_menu_welcome",
+        "stream": false
+      }
+    ]
+  }
+}

@@ -12,6 +12,7 @@ public class AxoHileMenuScreen extends Screen {
     private boolean autoTotemSubMenu = false;
     private boolean awaitingKeyBind = false;
     private String moduleToBind = "";
+    private String accountInput = "";
 
     public AxoHileMenuScreen() {
         super(Text.literal("VexionClient Menu"));
@@ -24,11 +25,7 @@ public class AxoHileMenuScreen extends Screen {
 
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
-        // Önce Minecraft ekran arka planını çiz; özel menü bunun üstünde kalmalı.
-        super.render(context, mouseX, mouseY, delta);
-
-        // Net, bulaniksiz arka plan
-        context.fill(0, 0, this.width, this.height, 0xFF000000);
+        VexionBackgroundRenderer.render(context, this.width, this.height);
 
         context.fill(this.width / 2 - 180, this.height / 2 - 120, this.width / 2 + 180, this.height / 2 + 120, 0xF0101010);
         
@@ -120,7 +117,7 @@ public class AxoHileMenuScreen extends Screen {
             context.drawTextWithShadow(this.textRenderer, "§e[Çevrimdışı Hesap Yöneticisi]", startX, startY, 0xFFFFFF);
             
             context.fill(startX, startY + 18, startX + 250, startY + 42, 0x80202020);
-            context.drawTextWithShadow(this.textRenderer, "Kullanıcı adı: " + AxoHileClient.typedAccountInput + "_", startX + 10, startY + 26, 0xFFFFFF);
+            context.drawTextWithShadow(this.textRenderer, "Kullanıcı adı: " + accountInput + "_", startX + 10, startY + 26, 0xFFFFFF);
 
             context.fill(startX, startY + 48, startX + 120, startY + 72, 0xFF333333);
             context.drawCenteredTextWithShadow(this.textRenderer, "+ Offline Ekle", startX + 60, startY + 56, 0x55FF55);
@@ -131,8 +128,8 @@ public class AxoHileMenuScreen extends Screen {
             context.drawTextWithShadow(this.textRenderer, "Kayıtlı çevrimdışı profiller:", startX, startY + 82, 0xAAAAAA);
             context.drawTextWithShadow(this.textRenderer, "§7Not: Bu liste Microsoft oturumunu değiştirmez.", startX, startY + 224, 0xAAAAAA);
             int accY = startY + 98;
-            for (String acc : AxoHileClient.accountList) {
-                boolean isSel = acc.equals(AxoHileClient.selectedAccount);
+            for (String acc : VexionAccountStore.getAccounts()) {
+                boolean isSel = acc.equals(VexionAccountStore.getSelected());
                 int bg = isSel ? 0xFF224488 : 0x80252525;
                 context.fill(startX, accY, startX + 250, accY + 20, bg);
                 context.drawTextWithShadow(this.textRenderer, (isSel ? "▶ " : "• ") + acc, startX + 10, accY + 6, isSel ? 0x55FFFF : 0xFFFFFF);
@@ -243,25 +240,18 @@ public class AxoHileMenuScreen extends Screen {
         }
         else if (selectedCategory.equals("Accounts")) {
             if (mouseX >= startX && mouseX <= startX + 120 && mouseY >= startY + 48 && mouseY <= startY + 72) {
-                String offlineName = AxoHileClient.typedAccountInput.trim();
-                if (offlineName.matches("[A-Za-z0-9_]{3,16}") && !AxoHileClient.accountList.contains(offlineName)) {
-                    AxoHileClient.accountList.add(offlineName);
-                    AxoHileClient.selectedAccount = offlineName;
-                    AxoHileClient.typedAccountInput = "";
-                    AxoHileClient.saveOfflineAccounts();
+                String offlineName = accountInput.trim();
+                if (VexionAccountStore.add(offlineName)) {
+                    accountInput = "";
                 }
             }
             else if (mouseX >= startX + 130 && mouseX <= startX + 250 && mouseY >= startY + 48 && mouseY <= startY + 72) {
-                if (!AxoHileClient.selectedAccount.isEmpty()) {
-                    AxoHileClient.accountList.remove(AxoHileClient.selectedAccount);
-                    AxoHileClient.selectedAccount = AxoHileClient.accountList.isEmpty() ? "" : AxoHileClient.accountList.get(0);
-                    AxoHileClient.saveOfflineAccounts();
-                }
+                VexionAccountStore.deleteSelected();
             }
             int accY = startY + 98;
-            for (String acc : AxoHileClient.accountList) {
+            for (String acc : VexionAccountStore.getAccounts()) {
                 if (mouseX >= startX && mouseX <= startX + 250 && mouseY >= accY && mouseY <= accY + 20) {
-                    AxoHileClient.selectedAccount = acc;
+                    VexionAccountStore.select(acc);
                 }
                 accY += 24;
             }
@@ -281,8 +271,8 @@ public class AxoHileMenuScreen extends Screen {
     @Override
     public boolean charTyped(char chr, int modifiers) {
         if (selectedCategory.equals("Accounts")) {
-            if (chr >= 32 && chr < 127 && AxoHileClient.typedAccountInput.length() < 16) {
-                AxoHileClient.typedAccountInput += chr;
+            if (chr >= 32 && chr < 127 && accountInput.length() < 16) {
+                accountInput += chr;
                 return true;
             }
         }
@@ -298,8 +288,8 @@ public class AxoHileMenuScreen extends Screen {
             return true;
         }
         if (selectedCategory.equals("Accounts")) {
-            if (keyCode == GLFW.GLFW_KEY_BACKSPACE && !AxoHileClient.typedAccountInput.isEmpty()) {
-                AxoHileClient.typedAccountInput = AxoHileClient.typedAccountInput.substring(0, AxoHileClient.typedAccountInput.length() - 1);
+            if (keyCode == GLFW.GLFW_KEY_BACKSPACE && !accountInput.isEmpty()) {
+                accountInput = accountInput.substring(0, accountInput.length() - 1);
                 return true;
             }
         }

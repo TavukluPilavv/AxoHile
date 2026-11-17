@@ -1,8 +1,8 @@
 package dev.axohile;
 
-import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.sound.PositionedSoundInstance;
 import net.minecraft.client.gui.screen.multiplayer.MultiplayerScreen;
 import net.minecraft.client.gui.screen.option.LanguageOptionsScreen;
 import net.minecraft.client.gui.screen.option.OptionsScreen;
@@ -11,69 +11,73 @@ import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.text.Text;
 
 public final class VexionMainMenuScreen extends Screen {
-    public VexionMainMenuScreen() {
-        super(Text.literal("Vexion Client"));
-    }
+    private static boolean welcomePlayed;
+    public VexionMainMenuScreen() { super(Text.literal("Vexion Client")); }
 
     @Override
     protected void init() {
-        int buttonWidth = Math.min(230, Math.max(170, this.width / 4));
-        int buttonHeight = 25;
-        int x = this.width - buttonWidth - Math.max(28, this.width / 12);
-        int startY = Math.max(42, this.height / 2 - 82);
-        int gap = 34;
+        if (!welcomePlayed && client != null) {
+            client.getSoundManager().play(PositionedSoundInstance.master(VexionSounds.MAIN_MENU_WELCOME, 1.0f));
+            welcomePlayed = true;
+        }
+        int buttonWidth = Math.min(250, Math.max(175, this.width / 4));
+        int buttonHeight = 28;
+        int x = this.width - buttonWidth - Math.max(24, this.width / 12);
+        int startY = Math.max(34, this.height / 2 - 90);
+        int gap = 35;
+        addDrawableChild(brightButton("Tek Oyunculu", x, startY, buttonWidth, buttonHeight,
+                b -> client.setScreen(new SelectWorldScreen(this))));
+        addDrawableChild(brightButton("Çok Oyunculu", x, startY + gap, buttonWidth, buttonHeight,
+                b -> client.setScreen(new MultiplayerScreen(this))));
+        addDrawableChild(brightButton("Ayarlar", x, startY + gap * 2, buttonWidth, buttonHeight,
+                b -> client.setScreen(new OptionsScreen(this, client.options))));
+        addDrawableChild(brightButton("Dil", x, startY + gap * 3, buttonWidth, buttonHeight,
+                b -> client.setScreen(new LanguageOptionsScreen(this, client.options, client.getLanguageManager()))));
+        addDrawableChild(brightButton("Account Manager", x, startY + gap * 4, buttonWidth, buttonHeight,
+                b -> client.setScreen(new VexionAccountManagerScreen(this))));
+        addDrawableChild(brightButton("Oyundan Çık", x, startY + gap * 5, buttonWidth, buttonHeight,
+                b -> client.scheduleStop()));
+    }
 
-        addDrawableChild(ButtonWidget.builder(Text.literal("Tek Oyunculu"),
-                button -> client.setScreen(new SelectWorldScreen(this)))
-                .dimensions(x, startY, buttonWidth, buttonHeight).build());
+    private ButtonWidget brightButton(String label, int x, int y, int width, int height,
+                                      ButtonWidget.PressAction action) {
+        return new VexionBrightButton(x, y, width, height, label, action);
+    }
 
-        addDrawableChild(ButtonWidget.builder(Text.literal("Çok Oyunculu"),
-                button -> client.setScreen(new MultiplayerScreen(this)))
-                .dimensions(x, startY + gap, buttonWidth, buttonHeight).build());
+    private static final class VexionBrightButton extends ButtonWidget {
+        private VexionBrightButton(int x, int y, int width, int height, String label, PressAction action) {
+            super(x, y, width, height, Text.literal(label), action, DEFAULT_NARRATION_SUPPLIER);
+        }
 
-        addDrawableChild(ButtonWidget.builder(Text.literal("Ayarlar"),
-                button -> client.setScreen(new OptionsScreen(this, client.options)))
-                .dimensions(x, startY + gap * 2, buttonWidth, buttonHeight).build());
-
-        addDrawableChild(ButtonWidget.builder(Text.literal("Dil"),
-                button -> client.setScreen(new LanguageOptionsScreen(this, client.options, client.getLanguageManager())))
-                .dimensions(x, startY + gap * 3, buttonWidth, buttonHeight).build());
-
-        addDrawableChild(ButtonWidget.builder(Text.literal("Account Manager"),
-                button -> client.setScreen(new VexionAccountManagerScreen(this)))
-                .dimensions(x, startY + gap * 4, buttonWidth, buttonHeight).build());
-
-        addDrawableChild(ButtonWidget.builder(Text.literal("Oyundan Çık"),
-                button -> client.scheduleStop())
-                .dimensions(x, startY + gap * 5 + 8, buttonWidth, buttonHeight).build());
+        @Override
+        protected void renderWidget(DrawContext context, int mouseX, int mouseY, float delta) {
+            int fill = isHovered() ? 0xFF527FC4 : 0xFF344F78;
+            context.fill(getX() + 2, getY() + 3, getX() + getWidth() + 2, getY() + getHeight() + 3, 0x66000000);
+            context.fill(getX(), getY(), getX() + getWidth(), getY() + getHeight(), fill);
+            context.fill(getX(), getY(), getX() + getWidth(), getY() + 2, 0xFF9EDBFF);
+            context.fill(getX(), getY() + getHeight() - 2, getX() + getWidth(), getY() + getHeight(), 0xFF182B49);
+            context.drawCenteredTextWithShadow(net.minecraft.client.MinecraftClient.getInstance().textRenderer,
+                    getMessage(), getX() + getWidth() / 2, getY() + (getHeight() - 8) / 2, 0xFFFFFFFF);
+        }
     }
 
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
-        VexionBackgroundRenderer.render(context, this.width, this.height);
-
-        int left = Math.max(28, this.width / 12);
-        int logoY = this.height / 2 - 86;
-
-        // Neon parlama katmanları
-        context.drawText(this.textRenderer, "VC", left - 3, logoY - 5, 0x553A9CFF, true);
-        context.drawText(this.textRenderer, "VC", left - 2, logoY - 4, 0x9956B8FF, true);
-        context.drawText(this.textRenderer, "VC", left, logoY - 2, 0xFFBDEBFF, true);
-        context.drawText(this.textRenderer, "VEXION CLIENT", left + 2, logoY + 38, 0xFFE7F2FF, true);
-        context.drawText(this.textRenderer, "Minecraft 1.21.4", left + 2, logoY + 55, 0xFF91A9D4, true);
-        context.fill(left + 2, logoY + 73, left + 150, logoY + 75, 0xFF4D9DFF);
-        context.drawText(this.textRenderer, "CUSTOM CLIENT", left + 2, logoY + 88, 0xFF8298C4, true);
-
+        VexionBackgroundRenderer.render(context, width, height);
+        int left = Math.max(28, width / 12);
+        int logoY = height / 2 - 82;
+        context.getMatrices().push();
+        context.getMatrices().translate(left, logoY, 0.0);
+        context.getMatrices().scale(5.0f, 5.0f, 1.0f);
+        context.drawTextWithShadow(textRenderer, Text.literal("V"), 0, 0, 0xFF249BFF);
+        context.drawTextWithShadow(textRenderer, Text.literal("C"), 12, 0, 0xFFFF354D);
+        context.getMatrices().pop();
+        context.drawTextWithShadow(textRenderer, "VEXION CLIENT", left + 2, logoY + 42, 0xFFFFFFFF);
+        context.drawTextWithShadow(textRenderer, "Minecraft 1.21.4", left + 2, logoY + 62, 0xFFFFD52E);
+        context.fill(left + 2, logoY + 80, left + 164, logoY + 82, 0xFFFFD52E);
         super.render(context, mouseX, mouseY, delta);
     }
 
-    @Override
-    public void close() {
-        // Ana menüden ESC ile çıkış ekranına dönülmez.
-    }
-
-    @Override
-    public boolean shouldPause() {
-        return false;
-    }
+    @Override public void close() {}
+    @Override public boolean shouldPause() { return false; }
 }

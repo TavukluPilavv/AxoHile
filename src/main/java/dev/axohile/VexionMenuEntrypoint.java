@@ -5,11 +5,13 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.minecraft.client.gui.screen.TitleScreen;
 
 public final class VexionMenuEntrypoint implements ClientModInitializer {
+
     @Override
     public void onInitializeClient() {
         VexionAccountStore.load();
+        VexionSounds.register();
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
-            if (client.currentScreen instanceof TitleScreen) {
+            if (client.player == null && client.currentScreen instanceof TitleScreen) {
                 client.setScreen(new VexionMainMenuScreen());
             }
         });

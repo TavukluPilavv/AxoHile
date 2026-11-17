@@ -1,5 +1,6 @@
 package dev.axohile;
 
+import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ButtonWidget;
@@ -18,102 +19,124 @@ public final class VexionAccountManagerScreen extends Screen {
 
     @Override
     protected void init() {
-        int panelWidth = Math.min(420, this.width - 32);
+        int panelWidth = Math.min(480, this.width - 28);
         int left = (this.width - panelWidth) / 2;
-        int top = Math.max(28, this.height / 5);
-
-        accountNameField = new TextFieldWidget(this.textRenderer, left + 18, top + 43,
-                panelWidth - 145, 22, Text.literal("Hesap adı"));
+        int top = Math.max(24, this.height / 7);
+        accountNameField = new TextFieldWidget(textRenderer, left + 18, top + 48,
+                panelWidth - 150, 25, Text.literal("Hesap adı"));
         accountNameField.setMaxLength(16);
         accountNameField.setPlaceholder(Text.literal("Minecraft kullanıcı adı"));
         addDrawableChild(accountNameField);
 
-        addDrawableChild(ButtonWidget.builder(Text.literal("Sil"), button -> {
-            VexionAccountStore.deleteSelected();
-            status = "Seçili hesap silindi.";
-        }).dimensions(left + panelWidth - 116, top + 42, 98, 24).build());
-
-        addDrawableChild(ButtonWidget.builder(Text.literal("Hesap Ekle"), button -> {
+        int actionY = height - 57, gap = 8;
+        int buttonWidth = Math.min(138, (panelWidth - 52) / 3);
+        int totalWidth = buttonWidth * 3 + gap * 2;
+        int actionX = (width - totalWidth) / 2;
+        addDrawableChild(actionButton("Hesap Ekle", actionX, actionY, buttonWidth, 27, 0xFF16864A, b -> {
             if (VexionAccountStore.add(accountNameField.getText())) {
                 accountNameField.setText("");
                 status = "Hesap listeye eklendi.";
-            } else {
-                status = "Geçersiz veya zaten kayıtlı isim.";
-            }
-        }).dimensions(left + 18, top + 76, panelWidth - 36, 25).build());
+            } else status = "Geçersiz veya zaten kayıtlı isim.";
+        }));
+        addDrawableChild(actionButton("Sil", actionX + buttonWidth + gap, actionY, buttonWidth, 27, 0xFFB83248, b -> {
+            VexionAccountStore.deleteSelected();
+            status = "Seçili hesap silindi.";
+        }));
+        addDrawableChild(actionButton("Geri", actionX + (buttonWidth + gap) * 2, actionY, buttonWidth, 27, 0xFF344F78,
+                b -> { if (client != null) client.setScreen(parent); }));
+    }
 
-        addDrawableChild(ButtonWidget.builder(Text.literal("Geri"), button -> {
-            if (client != null) client.setScreen(parent);
-        }).dimensions(left + 18, this.height - 42, 100, 20).build());
+    private ButtonWidget actionButton(String label, int x, int y, int width, int height, int color,
+                                      ButtonWidget.PressAction action) {
+        return new AccountActionButton(x, y, width, height, label, color, action);
+    }
+
+    private static final class AccountActionButton extends ButtonWidget {
+        private final int baseColor;
+        private AccountActionButton(int x, int y, int width, int height, String label, int color, PressAction action) {
+            super(x, y, width, height, Text.literal(label), action, DEFAULT_NARRATION_SUPPLIER);
+            this.baseColor = color;
+        }
+        @Override
+        protected void renderWidget(DrawContext context, int mouseX, int mouseY, float delta) {
+            int r = Math.min(255, ((baseColor >> 16) & 255) + (isHovered() ? 28 : 0));
+            int g = Math.min(255, ((baseColor >> 8) & 255) + (isHovered() ? 28 : 0));
+            int b = Math.min(255, (baseColor & 255) + (isHovered() ? 28 : 0));
+            int fill = 0xFF000000 | (r << 16) | (g << 8) | b;
+            context.fill(getX() + 2, getY() + 3, getX() + getWidth() + 2, getY() + getHeight() + 3, 0x66000000);
+            context.fill(getX(), getY(), getX() + getWidth(), getY() + getHeight(), fill);
+            context.fill(getX(), getY(), getX() + getWidth(), getY() + 2, 0xFFFFFFFF);
+            context.drawCenteredTextWithShadow(MinecraftClient.getInstance().textRenderer, getMessage(),
+                    getX() + getWidth() / 2, getY() + (getHeight() - 8) / 2, 0xFFFFFFFF);
+        }
+    }
+
+    private int brighten(int color) {
+        int r = Math.min(255, ((color >> 16) & 255) + 28);
+        int g = Math.min(255, ((color >> 8) & 255) + 28);
+        int b = Math.min(255, (color & 255) + 28);
+        return 0xFF000000 | (r << 16) | (g << 8) | b;
     }
 
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
-        VexionBackgroundRenderer.render(context, this.width, this.height);
-        int panelWidth = Math.min(420, this.width - 32);
-        int left = (this.width - panelWidth) / 2;
-        int top = Math.max(28, this.height / 5);
-
-        context.fill(left, top, left + panelWidth, this.height - 30, 0xE6101830);
+        VexionBackgroundRenderer.render(context, width, height);
+        int panelWidth = Math.min(480, width - 28);
+        int left = (width - panelWidth) / 2;
+        int top = Math.max(24, height / 7);
+        context.fill(left + 4, top + 5, left + panelWidth + 4, height - 42, 0x77000000);
+        context.fill(left, top, left + panelWidth, height - 45, 0xE6101830);
         context.fill(left, top, left + panelWidth, top + 3, 0xFF438CFF);
-        context.drawCenteredTextWithShadow(this.textRenderer, "VC  ACCOUNT MANAGER",
-                this.width / 2, top + 14, 0xFFE8F3FF);
-        context.drawTextWithShadow(this.textRenderer, "Hesap adı", left + 18, top + 31, 0xFFB8C9E8);
-
+        context.drawCenteredTextWithShadow(textRenderer, "ACCOUNT MANAGER", width / 2, top + 15, 0xFFE8F3FF);
+        context.drawTextWithShadow(textRenderer, "Hesap adı", left + 18, top + 34, 0xFFB8C9E8);
         super.render(context, mouseX, mouseY, delta);
 
-        // İstenen yeşil ekle ve kırmızı sil buton renkleri
-        context.fill(left + panelWidth - 116, top + 42, left + panelWidth - 18, top + 66, 0xFFB83248);
-        context.drawCenteredTextWithShadow(this.textRenderer, "Sil", left + panelWidth - 67, top + 50, 0xFFFFFFFF);
-        context.fill(left + 18, top + 76, left + panelWidth - 18, top + 101, 0xFF16864A);
-        context.drawCenteredTextWithShadow(this.textRenderer, "Hesap Ekle", this.width / 2, top + 84, 0xFFFFFFFF);
-
-        context.drawTextWithShadow(this.textRenderer, "Kayıtlı hesaplar", left + 18, top + 111, 0xFFB8C9E8);
-        int rowY = top + 128;
+        context.drawTextWithShadow(textRenderer, "Kayıtlı hesaplar", left + 18, top + 83, 0xFFB8C9E8);
+        String loggedInName = MinecraftClient.getInstance().getSession().getUsername();
+        int rowY = top + 101;
         for (String account : VexionAccountStore.getAccounts()) {
+            boolean activeSession = account.equalsIgnoreCase(loggedInName);
             boolean selected = account.equals(VexionAccountStore.getSelected());
-            int rowColor = selected ? 0xFF245A9B : 0x88313D58;
-            context.fill(left + 18, rowY, left + panelWidth - 18, rowY + 21, rowColor);
-            context.drawTextWithShadow(this.textRenderer, (selected ? "▶  " : "   ") + account,
-                    left + 27, rowY + 6, selected ? 0xFFBDEBFF : 0xFFFFFFFF);
-            rowY += 25;
-            if (rowY > this.height - 65) break;
+            int rowLeft = left + 18, rowRight = left + panelWidth - 18;
+            context.fill(rowLeft - 2, rowY - 2, rowRight + 2, rowY + 22,
+                    activeSession ? 0xFF269BFF : 0xFFE9EDF5);
+            context.fill(rowLeft, rowY, rowRight, rowY + 20, selected ? 0xFF203D60 : 0xE51A2230);
+            context.drawTextWithShadow(textRenderer, account, rowLeft + 9, rowY + 6, 0xFF58B8FF);
+            context.drawTextWithShadow(textRenderer, activeSession ? "OYUNDA" : (selected ? "SEÇİLİ" : ""),
+                    rowRight - 52, rowY + 6, activeSession ? 0xFF8AD5FF : 0xFFE9EDF5);
+            rowY += 26;
+            if (rowY > height - 95) break;
         }
-
-        if (!status.isEmpty()) {
-            context.drawCenteredTextWithShadow(this.textRenderer, status, this.width / 2,
-                    this.height - 59, 0xFFFFD479);
-        }
-        context.drawCenteredTextWithShadow(this.textRenderer,
-                "Bu liste çevrimdışı isimleri saklar; Microsoft oturumu açmaz.",
-                this.width / 2, this.height - 19, 0xFF9BAAC6);
+        if (VexionAccountStore.getAccounts().isEmpty())
+            context.drawCenteredTextWithShadow(textRenderer, "Henüz hesap eklenmedi", width / 2, top + 125, 0xFFCCD3DF);
+        if (!status.isEmpty())
+            context.drawCenteredTextWithShadow(textRenderer, status, width / 2, height - 77, 0xFFFFD479);
+        context.drawCenteredTextWithShadow(textRenderer,
+                "Mavi çerçeve: şu an oyunda açık hesap  |  Beyaz çerçeve: diğer hesaplar",
+                width / 2, height - 66, 0xFFD5DCE7);
+        context.drawCenteredTextWithShadow(textRenderer,
+                "Çevrimdışı isim listesi Microsoft oturumunu değiştirmez.",
+                width / 2, height - 32, 0xFF9BAAC6);
     }
 
     @Override
     public boolean mouseClicked(double mouseX, double mouseY, int button) {
-        int panelWidth = Math.min(420, this.width - 32);
-        int left = (this.width - panelWidth) / 2;
-        int top = Math.max(28, this.height / 5);
-        int rowY = top + 128;
-
+        int panelWidth = Math.min(480, width - 28);
+        int left = (width - panelWidth) / 2;
+        int rowY = Math.max(24, height / 7) + 101;
         for (String account : VexionAccountStore.getAccounts()) {
-            if (mouseX >= left + 18 && mouseX <= left + panelWidth - 18
-                    && mouseY >= rowY && mouseY <= rowY + 21) {
+            if (mouseX >= left + 16 && mouseX <= left + panelWidth - 16
+                    && mouseY >= rowY - 2 && mouseY <= rowY + 22) {
                 VexionAccountStore.select(account);
+                status = account.equalsIgnoreCase(MinecraftClient.getInstance().getSession().getUsername())
+                        ? account + " şu anki oyun hesabı." : account + " seçildi. Oturum değişmedi.";
                 return true;
             }
-            rowY += 25;
+            rowY += 26;
         }
         return super.mouseClicked(mouseX, mouseY, button);
     }
 
-    @Override
-    public void close() {
-        if (client != null) client.setScreen(parent);
-    }
-
-    @Override
-    public boolean shouldPause() {
-        return false;
-    }
+    @Override public void close() { if (client != null) client.setScreen(parent); }
+    @Override public boolean shouldPause() { return false; }
 }
