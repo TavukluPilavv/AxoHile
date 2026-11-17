@@ -25,6 +25,9 @@ import net.minecraft.util.math.Vec3d;
 import org.joml.Matrix4f;
 import org.lwjgl.glfw.GLFW;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class AxoHileClient implements ClientModInitializer {
     public static KeyBinding menuKey;
     
@@ -67,8 +70,14 @@ public class AxoHileClient implements ClientModInitializer {
     private static int dragOffsetX = 0;
     private static int dragOffsetY = 0;
 
-    // Menünün hata vermemesi için eklenen değişken (Derleme hatasını çözer)
+    // --- MENÜNÜN HATA VERMEMESİ İÇİN GEREKLİ ALANLAR ---
+    public static List<String> accountList = new ArrayList<>();
+    public static String selectedAccount = "";
     public static String typedAccountInput = "";
+
+    public static void saveOfflineAccounts() {
+        // Hesap yöneticisi kalıntısı metot
+    }
 
     private static int previousSlot = -1;                 
     private static int welcomeTimer = 0;
