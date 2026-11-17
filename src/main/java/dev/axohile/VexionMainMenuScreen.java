@@ -35,19 +35,24 @@ public final class VexionMainMenuScreen extends Screen {
 
     private ButtonWidget brightButton(String label, int x, int y, int width, int height,
                                       ButtonWidget.PressAction action) {
-        return new ButtonWidget(x, y, width, height, Text.literal(label), action,
-                DEFAULT_NARRATION_SUPPLIER) {
-            @Override
-            protected void renderWidget(DrawContext context, int mouseX, int mouseY, float delta) {
-                int fill = isHovered() ? 0xFF527FC4 : 0xFF344F78;
-                context.fill(getX() + 2, getY() + 3, getX() + width + 2, getY() + height + 3, 0x66000000);
-                context.fill(getX(), getY(), getX() + width, getY() + height, fill);
-                context.fill(getX(), getY(), getX() + width, getY() + 2, 0xFF9EDBFF);
-                context.fill(getX(), getY() + height - 2, getX() + width, getY() + height, 0xFF182B49);
-                context.drawCenteredTextWithShadow(net.minecraft.client.MinecraftClient.getInstance().textRenderer,
-                        getMessage(), getX() + width / 2, getY() + (height - 8) / 2, 0xFFFFFFFF);
-            }
-        };
+        return new VexionBrightButton(x, y, width, height, label, action);
+    }
+
+    private static final class VexionBrightButton extends ButtonWidget {
+        private VexionBrightButton(int x, int y, int width, int height, String label, PressAction action) {
+            super(x, y, width, height, Text.literal(label), action, DEFAULT_NARRATION_SUPPLIER);
+        }
+
+        @Override
+        protected void renderWidget(DrawContext context, int mouseX, int mouseY, float delta) {
+            int fill = isHovered() ? 0xFF527FC4 : 0xFF344F78;
+            context.fill(getX() + 2, getY() + 3, getX() + getWidth() + 2, getY() + getHeight() + 3, 0x66000000);
+            context.fill(getX(), getY(), getX() + getWidth(), getY() + getHeight(), fill);
+            context.fill(getX(), getY(), getX() + getWidth(), getY() + 2, 0xFF9EDBFF);
+            context.fill(getX(), getY() + getHeight() - 2, getX() + getWidth(), getY() + getHeight(), 0xFF182B49);
+            context.drawCenteredTextWithShadow(net.minecraft.client.MinecraftClient.getInstance().textRenderer,
+                    getMessage(), getX() + getWidth() / 2, getY() + (getHeight() - 8) / 2, 0xFFFFFFFF);
+        }
     }
 
     @Override
