@@ -12,7 +12,7 @@ public final class VexionBackgroundRenderer {
 
     public static void render(DrawContext context, int width, int height) {
         context.drawTexture(RenderLayer::getGuiTextured, BACKGROUND,
-                0, 0, 0.0f, 0.0f, width, height, 1536, 1024);
-        context.fillGradient(0, 0, width, height, 0x18040A16, 0x44020710);
+                0, 0, 0.0f, 0.0f, width, height, 1536, 846);
+        context.fillGradient(0, 0, width, height, 0x10040A16, 0x30020710);
     }
 }
