@@ -49,7 +49,7 @@ public final class VexionAccountManagerScreen extends Screen {
     private ButtonWidget actionButton(String label, int x, int y, int width, int height, int color,
                                       ButtonWidget.PressAction action) {
         return new ButtonWidget(x, y, width, height, Text.literal(label), action,
-                ButtonWidget.DEFAULT_NARRATION_SUPPLIER) {
+                DEFAULT_NARRATION_SUPPLIER) {
             @Override
             protected void renderWidget(DrawContext context, int mouseX, int mouseY, float delta) {
                 int fill = isHovered() ? brighten(color) : color;
