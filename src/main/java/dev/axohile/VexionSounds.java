@@ -6,12 +6,12 @@ import net.minecraft.sound.SoundEvent;
 import net.minecraft.util.Identifier;
 
 public final class VexionSounds {
-    public static final Identifier WELCOME_ID = Identifier.of("axohile", "vexion_welcome");
-    public static final SoundEvent WELCOME = SoundEvent.of(WELCOME_ID);
+    public static final Identifier MAIN_MENU_MAIN_MENU_WELCOME_ID = Identifier.of("axohile", "main_menu_welcome");
+    public static final SoundEvent MAIN_MENU_WELCOME = SoundEvent.of(MAIN_MENU_MAIN_MENU_WELCOME_ID);
 
     private VexionSounds() {}
 
     public static void register() {
-        Registry.register(Registries.SOUND_EVENT, WELCOME_ID, WELCOME);
+        Registry.register(Registries.SOUND_EVENT, MAIN_MENU_MAIN_MENU_WELCOME_ID, MAIN_MENU_WELCOME);
     }
 }

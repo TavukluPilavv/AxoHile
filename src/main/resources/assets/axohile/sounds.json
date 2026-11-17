@@ -14,5 +14,13 @@
         "stream": false
       }
     ]
+  },
+  "main_menu_welcome": {
+    "sounds": [
+      {
+        "name": "axohile:main_menu_welcome",
+        "stream": false
+      }
+    ]
   }
 }

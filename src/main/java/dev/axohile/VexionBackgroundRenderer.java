@@ -6,13 +6,13 @@ import net.minecraft.util.Identifier;
 
 public final class VexionBackgroundRenderer {
     private static final Identifier BACKGROUND =
-            Identifier.of("axohile", "textures/gui/vexion_menu_background.jpg");
+            Identifier.of("axohile", "textures/gui/vexion_main_menu.jpg");
 
     private VexionBackgroundRenderer() {}
 
     public static void render(DrawContext context, int width, int height) {
         context.drawTexture(RenderLayer::getGuiTextured, BACKGROUND,
-                0, 0, 0.0f, 0.0f, width, height, 1536, 846);
+                0, 0, 0.0f, 0.0f, width, height, 400, 225);
         context.fillGradient(0, 0, width, height, 0x10040A16, 0x30020710);
     }
 }

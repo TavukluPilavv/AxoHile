@@ -2,6 +2,7 @@ package dev.axohile;
 
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
+import net.minecraft.client.sound.PositionedSoundInstance;
 import net.minecraft.client.gui.screen.multiplayer.MultiplayerScreen;
 import net.minecraft.client.gui.screen.option.LanguageOptionsScreen;
 import net.minecraft.client.gui.screen.option.OptionsScreen;
@@ -10,10 +11,15 @@ import net.minecraft.client.gui.widget.ButtonWidget;
 import net.minecraft.text.Text;
 
 public final class VexionMainMenuScreen extends Screen {
+    private static boolean welcomePlayed;
     public VexionMainMenuScreen() { super(Text.literal("Vexion Client")); }
 
     @Override
     protected void init() {
+        if (!welcomePlayed && client != null) {
+            client.getSoundManager().play(PositionedSoundInstance.master(VexionSounds.MAIN_MENU_WELCOME, 1.0f));
+            welcomePlayed = true;
+        }
         int buttonWidth = Math.min(250, Math.max(175, this.width / 4));
         int buttonHeight = 28;
         int x = this.width - buttonWidth - Math.max(24, this.width / 12);
