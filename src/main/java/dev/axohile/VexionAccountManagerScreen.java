@@ -48,18 +48,27 @@ public final class VexionAccountManagerScreen extends Screen {
 
     private ButtonWidget actionButton(String label, int x, int y, int width, int height, int color,
                                       ButtonWidget.PressAction action) {
-        return new ButtonWidget(x, y, width, height, Text.literal(label), action,
-                DEFAULT_NARRATION_SUPPLIER) {
-            @Override
-            protected void renderWidget(DrawContext context, int mouseX, int mouseY, float delta) {
-                int fill = isHovered() ? brighten(color) : color;
-                context.fill(getX() + 2, getY() + 3, getX() + width + 2, getY() + height + 3, 0x66000000);
-                context.fill(getX(), getY(), getX() + width, getY() + height, fill);
-                context.fill(getX(), getY(), getX() + width, getY() + 2, 0xFFFFFFFF);
-                context.drawCenteredTextWithShadow(MinecraftClient.getInstance().textRenderer, getMessage(),
-                        getX() + width / 2, getY() + (height - 8) / 2, 0xFFFFFFFF);
-            }
-        };
+        return new AccountActionButton(x, y, width, height, label, color, action);
+    }
+
+    private static final class AccountActionButton extends ButtonWidget {
+        private final int baseColor;
+        private AccountActionButton(int x, int y, int width, int height, String label, int color, PressAction action) {
+            super(x, y, width, height, Text.literal(label), action, DEFAULT_NARRATION_SUPPLIER);
+            this.baseColor = color;
+        }
+        @Override
+        protected void renderWidget(DrawContext context, int mouseX, int mouseY, float delta) {
+            int r = Math.min(255, ((baseColor >> 16) & 255) + (isHovered() ? 28 : 0));
+            int g = Math.min(255, ((baseColor >> 8) & 255) + (isHovered() ? 28 : 0));
+            int b = Math.min(255, (baseColor & 255) + (isHovered() ? 28 : 0));
+            int fill = 0xFF000000 | (r << 16) | (g << 8) | b;
+            context.fill(getX() + 2, getY() + 3, getX() + getWidth() + 2, getY() + getHeight() + 3, 0x66000000);
+            context.fill(getX(), getY(), getX() + getWidth(), getY() + getHeight(), fill);
+            context.fill(getX(), getY(), getX() + getWidth(), getY() + 2, 0xFFFFFFFF);
+            context.drawCenteredTextWithShadow(MinecraftClient.getInstance().textRenderer, getMessage(),
+                    getX() + getWidth() / 2, getY() + (getHeight() - 8) / 2, 0xFFFFFFFF);
+        }
     }
 
     private int brighten(int color) {
