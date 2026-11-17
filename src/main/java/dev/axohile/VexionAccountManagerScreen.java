@@ -62,6 +62,12 @@ public final class VexionAccountManagerScreen extends Screen {
 
         super.render(context, mouseX, mouseY, delta);
 
+        // İstenen yeşil ekle ve kırmızı sil buton renkleri
+        context.fill(left + panelWidth - 116, top + 42, left + panelWidth - 18, top + 66, 0xFFB83248);
+        context.drawCenteredTextWithShadow(this.textRenderer, "Sil", left + panelWidth - 67, top + 50, 0xFFFFFFFF);
+        context.fill(left + 18, top + 76, left + panelWidth - 18, top + 101, 0xFF16864A);
+        context.drawCenteredTextWithShadow(this.textRenderer, "Hesap Ekle", this.width / 2, top + 84, 0xFFFFFFFF);
+
         context.drawTextWithShadow(this.textRenderer, "Kayıtlı hesaplar", left + 18, top + 111, 0xFFB8C9E8);
         int rowY = top + 128;
         for (String account : VexionAccountStore.getAccounts()) {
