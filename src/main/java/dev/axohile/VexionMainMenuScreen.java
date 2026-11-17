@@ -36,7 +36,7 @@ public final class VexionMainMenuScreen extends Screen {
     private ButtonWidget brightButton(String label, int x, int y, int width, int height,
                                       ButtonWidget.PressAction action) {
         return new ButtonWidget(x, y, width, height, Text.literal(label), action,
-                ButtonWidget.DEFAULT_NARRATION_SUPPLIER) {
+                DEFAULT_NARRATION_SUPPLIER) {
             @Override
             protected void renderWidget(DrawContext context, int mouseX, int mouseY, float delta) {
                 int fill = isHovered() ? 0xFF527FC4 : 0xFF344F78;
