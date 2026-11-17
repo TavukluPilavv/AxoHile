@@ -67,6 +67,9 @@ public class AxoHileClient implements ClientModInitializer {
     private static int dragOffsetX = 0;
     private static int dragOffsetY = 0;
 
+    // Menünün hata vermemesi için eklenen değişken (Derleme hatasını çözer)
+    public static String typedAccountInput = "";
+
     private static int previousSlot = -1;                 
     private static int welcomeTimer = 0;
 
@@ -259,7 +262,6 @@ public class AxoHileClient implements ClientModInitializer {
         }
     }
 
-    // --- SARSINTISIZ VE KUSURSUZ SENKRONİZE ATTACK AURA / CRITICALS ---
     private static void runAdvancedCombat(MinecraftClient client) {
         if (client.player == null || client.interactionManager == null) return;
 
@@ -290,17 +292,14 @@ public class AxoHileClient implements ClientModInitializer {
             boolean isCooldownReady = client.player.getAttackCooldownProgress(0.5f) >= 0.98f;
 
             if (fullHitEnabled) {
-                // Kritik koşulu: Yerde değil, düşüşte, merdivende ve suda değil
                 boolean canCrit = !client.player.isOnGround() 
                         && client.player.fallDistance > 0.0f 
                         && !client.player.isClimbing() 
                         && !client.player.isTouchingWater();
 
-                // 1. Yerdeyken ve kılıç doluyken zıpla
                 if (client.player.isOnGround() && isCooldownReady) {
                     client.player.jump();
                 } 
-                // 2. Havadayken kritik şartları sağlandığında VE cooldown dolduğunda vuruşu yap
                 else if (canCrit && isCooldownReady) {
                     client.player.setSprinting(false);
                     client.interactionManager.attackEntity(client.player, target);
@@ -308,7 +307,6 @@ public class AxoHileClient implements ClientModInitializer {
                     restorePreviousItem(client);
                 }
             } else {
-                // Full Hit Kapalıyken: Normal cooldown dolunca vurur, asla spam yapmaz
                 if (isCooldownReady) {
                     client.interactionManager.attackEntity(client.player, target);
                     client.player.swingHand(Hand.MAIN_HAND);
@@ -369,7 +367,6 @@ public class AxoHileClient implements ClientModInitializer {
         float dy = (maxY - minY) * f;
         float dz = (maxZ - minZ) * f;
 
-        // Köşeli arada boşluk olan (Corner Box) çizim mantığı
         drawLine(matrix, buffer, minX, minY, minZ, minX + dx, minY, minZ, r, g, b, a);
         drawLine(matrix, buffer, minX, minY, minZ, minX, minY + dy, minZ, r, g, b, a);
         drawLine(matrix, buffer, minX, minY, minZ, minX, minY, minZ + dz, r, g, b, a);
@@ -418,7 +415,6 @@ public class AxoHileClient implements ClientModInitializer {
         }
     }
 
-    // --- ELYTRA TARGET & DÜZELTİLMİŞ KESİNTİSİZ FİŞEK BASMA SİSTEMİ ---
     private static void runElytraFlight(MinecraftClient client) {
         if (client.player == null || client.world == null || client.interactionManager == null) return;
 
@@ -439,13 +435,7 @@ public class AxoHileClient implements ClientModInitializer {
             aimAtTargetSmooth(client.player, target, elytraBypassType);
         }
 
-        // Eğer süzülmüyorsa ve havadaysa (düşerken) güvenli süzülmeyi tetikle
-        if (!client.player.isGliding() && !client.player.isOnGround() && client.player.fallDistance > 0.5f) {
-            // Sunucunun süzülme durumunu kaybetmesini önlemek için kısa aralıklarla tetikler
-        }
-
         int tickInterval = Math.max(2, 22 - (autoFireworkSpeed * 2)); 
-        // Süzülürken veya havadayken fişek basma garantisi
         if ((client.player.isGliding() || client.player.fallDistance > 0.4f) && client.player.age % tickInterval == 0) {
             useFireworkAnywhere(client);
         }
@@ -481,7 +471,6 @@ public class AxoHileClient implements ClientModInitializer {
         }
     }
 
-    // --- YUMUŞATILMIŞ (SARSINTISIZ) AİM SİSTEMİ ---
     private static void aimAtTargetSmooth(PlayerEntity player, LivingEntity target, String bypass) {
         Vec3d eyes = player.getEyePos();
         Vec3d targetPos = target.getPos().add(0, target.getHeight() * 0.5, 0);
@@ -498,7 +487,6 @@ public class AxoHileClient implements ClientModInitializer {
         float yawDelta = wrapDegrees(targetYaw - player.getYaw());
         float pitchDelta = targetPitch - player.getPitch();
 
-        // Kamera sarsıntısını önlemek için yumuşatma oranı düşürüldü ve kısıtlandı
         float smoothing = bypass.equals("Grim") ? 0.15f : 0.25f;
 
         player.setYaw(player.getYaw() + yawDelta * smoothing);
