@@ -13,8 +13,6 @@ public class AxoHileMenuScreen extends Screen {
     private boolean awaitingKeyBind = false;
     private String moduleToBind = "";
     private String accountInput = "";
-    private String accountInput = "";
-    private String accountInput = "";
 
     public AxoHileMenuScreen() {
         super(Text.literal("VexionClient Menu"));
