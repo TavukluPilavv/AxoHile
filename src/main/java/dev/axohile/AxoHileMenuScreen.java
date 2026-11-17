@@ -12,6 +12,7 @@ public class AxoHileMenuScreen extends Screen {
     private boolean autoTotemSubMenu = false;
     private boolean awaitingKeyBind = false;
     private String moduleToBind = "";
+    private String accountInput = "";
 
     public AxoHileMenuScreen() {
         super(Text.literal("VexionClient Menu"));
@@ -116,7 +117,7 @@ public class AxoHileMenuScreen extends Screen {
             context.drawTextWithShadow(this.textRenderer, "§e[Çevrimdışı Hesap Yöneticisi]", startX, startY, 0xFFFFFF);
             
             context.fill(startX, startY + 18, startX + 250, startY + 42, 0x80202020);
-            context.drawTextWithShadow(this.textRenderer, "Kullanıcı adı: " + AxoHileClient.typedAccountInput + "_", startX + 10, startY + 26, 0xFFFFFF);
+            context.drawTextWithShadow(this.textRenderer, "Kullanıcı adı: " + accountInput + "_", startX + 10, startY + 26, 0xFFFFFF);
 
             context.fill(startX, startY + 48, startX + 120, startY + 72, 0xFF333333);
             context.drawCenteredTextWithShadow(this.textRenderer, "+ Offline Ekle", startX + 60, startY + 56, 0x55FF55);
@@ -127,8 +128,8 @@ public class AxoHileMenuScreen extends Screen {
             context.drawTextWithShadow(this.textRenderer, "Kayıtlı çevrimdışı profiller:", startX, startY + 82, 0xAAAAAA);
             context.drawTextWithShadow(this.textRenderer, "§7Not: Bu liste Microsoft oturumunu değiştirmez.", startX, startY + 224, 0xAAAAAA);
             int accY = startY + 98;
-            for (String acc : AxoHileClient.accountList) {
-                boolean isSel = acc.equals(AxoHileClient.selectedAccount);
+            for (String acc : VexionAccountStore.getAccounts()) {
+                boolean isSel = acc.equals(VexionAccountStore.getSelected());
                 int bg = isSel ? 0xFF224488 : 0x80252525;
                 context.fill(startX, accY, startX + 250, accY + 20, bg);
                 context.drawTextWithShadow(this.textRenderer, (isSel ? "▶ " : "• ") + acc, startX + 10, accY + 6, isSel ? 0x55FFFF : 0xFFFFFF);
