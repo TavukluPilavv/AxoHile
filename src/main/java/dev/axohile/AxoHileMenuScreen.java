@@ -14,6 +14,7 @@ public class AxoHileMenuScreen extends Screen {
     private String moduleToBind = "";
     private String accountInput = "";
     private String accountInput = "";
+    private String accountInput = "";
 
     public AxoHileMenuScreen() {
         super(Text.literal("VexionClient Menu"));
@@ -242,24 +243,17 @@ public class AxoHileMenuScreen extends Screen {
         else if (selectedCategory.equals("Accounts")) {
             if (mouseX >= startX && mouseX <= startX + 120 && mouseY >= startY + 48 && mouseY <= startY + 72) {
                 String offlineName = accountInput.trim();
-                if (offlineName.matches("[A-Za-z0-9_]{3,16}") && !VexionAccountStore.getAccounts().contains(offlineName)) {
-                    AxoHileClient.accountList.add(offlineName);
-                    VexionAccountStore.getSelected() = offlineName;
-                    AxoHileClient.typedAccountInput = "";
-                    AxoHileClient.saveOfflineAccounts();
+                if (VexionAccountStore.add(offlineName)) {
+                    accountInput = "";
                 }
             }
             else if (mouseX >= startX + 130 && mouseX <= startX + 250 && mouseY >= startY + 48 && mouseY <= startY + 72) {
-                if (!AxoHileClient.selectedAccount.isEmpty()) {
-                    AxoHileClient.accountList.remove(AxoHileClient.selectedAccount);
-                    AxoHileClient.selectedAccount = AxoHileClient.accountList.isEmpty() ? "" : AxoHileClient.accountList.get(0);
-                    AxoHileClient.saveOfflineAccounts();
-                }
+                VexionAccountStore.deleteSelected();
             }
             int accY = startY + 98;
-            for (String acc : AxoHileClient.accountList) {
+            for (String acc : VexionAccountStore.getAccounts()) {
                 if (mouseX >= startX && mouseX <= startX + 250 && mouseY >= accY && mouseY <= accY + 20) {
-                    AxoHileClient.selectedAccount = acc;
+                    VexionAccountStore.select(acc);
                 }
                 accY += 24;
             }
@@ -279,8 +273,8 @@ public class AxoHileMenuScreen extends Screen {
     @Override
     public boolean charTyped(char chr, int modifiers) {
         if (selectedCategory.equals("Accounts")) {
-            if (chr >= 32 && chr < 127 && AxoHileClient.typedAccountInput.length() < 16) {
-                AxoHileClient.typedAccountInput += chr;
+            if (chr >= 32 && chr < 127 && accountInput.length() < 16) {
+                accountInput += chr;
                 return true;
             }
         }
@@ -296,8 +290,8 @@ public class AxoHileMenuScreen extends Screen {
             return true;
         }
         if (selectedCategory.equals("Accounts")) {
-            if (keyCode == GLFW.GLFW_KEY_BACKSPACE && !AxoHileClient.typedAccountInput.isEmpty()) {
-                AxoHileClient.typedAccountInput = AxoHileClient.typedAccountInput.substring(0, AxoHileClient.typedAccountInput.length() - 1);
+            if (keyCode == GLFW.GLFW_KEY_BACKSPACE && !accountInput.isEmpty()) {
+                accountInput = accountInput.substring(0, accountInput.length() - 1);
                 return true;
             }
         }
