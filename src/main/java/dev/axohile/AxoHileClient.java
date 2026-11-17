@@ -1,14 +1,12 @@
 package dev.axohile;
 
 import net.fabricmc.api.ClientModInitializer;
-import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
 import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderContext;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.util.math.MatrixStack;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.render.RenderLayer;
 import net.minecraft.client.render.VertexConsumer;
@@ -29,10 +27,6 @@ import org.lwjgl.glfw.GLFW;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.io.IOException;
 
 public class AxoHileClient implements ClientModInitializer {
     public static KeyBinding menuKey;
@@ -82,39 +76,6 @@ public class AxoHileClient implements ClientModInitializer {
     public static List<String> accountList = new ArrayList<>();
     public static String selectedAccount = "";
     public static String typedAccountInput = "";
-
-    private static Path getAccountsFile() {
-        return FabricLoader.getInstance().getConfigDir().resolve("vexionclient-offline-accounts.txt");
-    }
-
-    public static void loadOfflineAccounts() {
-        Path file = getAccountsFile();
-        try {
-            if (Files.exists(file)) {
-                accountList.clear();
-                for (String name : Files.readAllLines(file, StandardCharsets.UTF_8)) {
-                    if (name.matches("[A-Za-z0-9_]{3,16}") && !accountList.contains(name)) {
-                        accountList.add(name);
-                    }
-                }
-            }
-            if (!accountList.contains(selectedAccount)) {
-                selectedAccount = accountList.isEmpty() ? "" : accountList.get(0);
-            }
-        } catch (IOException exception) {
-            System.err.println("[VexionClient] Offline hesaplar yüklenemedi: " + exception.getMessage());
-        }
-    }
-
-    public static void saveOfflineAccounts() {
-        try {
-            Path file = getAccountsFile();
-            Files.createDirectories(file.getParent());
-            Files.write(file, accountList, StandardCharsets.UTF_8);
-        } catch (IOException exception) {
-            System.err.println("[VexionClient] Offline hesaplar kaydedilemedi: " + exception.getMessage());
-        }
-    }
 
     private static int previousSlot = -1;                 
     private static int welcomeTimer = 0;
@@ -339,9 +300,11 @@ public class AxoHileClient implements ClientModInitializer {
 
             // Full Hit ve Cooldown Mantığı
             if (fullHitEnabled) {
+                // Sadece yerdeyken VE cooldown tamamen dolduğunda zıpla
                 if (client.player.isOnGround() && client.player.getAttackCooldownProgress(0.5f) >= 0.98f) {
                     client.player.jump();
                 } 
+                // Havadayken (düşüşe geçtiğinde) ve cooldown doluyken %100 kusursuz kritik vuruş at
                 else if (!client.player.isOnGround() && client.player.fallDistance > 0.0f && client.player.getAttackCooldownProgress(0.5f) >= 0.98f) {
                     client.player.setSprinting(false);
                     client.interactionManager.attackEntity(client.player, target);
@@ -349,6 +312,7 @@ public class AxoHileClient implements ClientModInitializer {
                     restorePreviousItem(client);
                 }
             } else {
+                // Full Hit Kapalıyken: Normal yerde/havada cooldown dolduğunda düz vurur, asla spam yapmaz
                 if (client.player.getAttackCooldownProgress(0.5f) >= 0.98f) {
                     client.interactionManager.attackEntity(client.player, target);
                     client.player.swingHand(Hand.MAIN_HAND);
@@ -375,12 +339,12 @@ public class AxoHileClient implements ClientModInitializer {
         return closest;
     }
 
-    // --- 3D KÖŞELİ HEDEF KUTUSU (CORNER BOX ESP / TARGET HUD) ---
+    // --- 3D KÖŞELİ HEDEF KUTUSU (CORNER BOX ESP) ---
     private static void renderTargetIndicator(WorldRenderContext context, LivingEntity target, boolean inRange) {
         MinecraftClient client = MinecraftClient.getInstance();
         if (client.player == null || target == null) return;
 
-        MatrixStack matrices = context.matrixStack();
+        net.minecraft.client.util.math.MatrixStack matrices = context.matrixStack();
         net.minecraft.client.render.Camera camera = context.camera();
         Vec3d camPos = camera.getPos();
 
@@ -405,7 +369,6 @@ public class AxoHileClient implements ClientModInitializer {
         float b = (color & 0xFF) / 255.0f;
         float a = 1.0f;
 
-        // Köşeli arada boşluk olan (Corner Box) çizim mantığı
         float f = 0.28f; 
         float dx = (maxX - minX) * f;
         float dy = (maxY - minY) * f;
@@ -461,7 +424,7 @@ public class AxoHileClient implements ClientModInitializer {
         }
     }
 
-    // --- ELYTRA TARGET & DÜZELTİLMİŞ FİŞEK BASMA SİSTEMİ ---
+    // --- ELYTRA TARGET & DÜZELTİLMİŞ FİŞEK BASMA SİSTEMİ (1.21.4 isGliding Uyumlu) ---
     private static void runElytraFlight(MinecraftClient client) {
         if (client.player == null || client.world == null || client.interactionManager == null) return;
 
@@ -482,7 +445,6 @@ public class AxoHileClient implements ClientModInitializer {
             aimAtTargetSmooth(client.player, target, elytraBypassType);
         }
 
-        // isFallFlying kontrolü ile süzülme anında fişek basma
         boolean isGliding = client.player.isGliding();
 
         int tickInterval = Math.max(2, 22 - (autoFireworkSpeed * 2)); 
@@ -495,7 +457,6 @@ public class AxoHileClient implements ClientModInitializer {
         if (client.player == null || client.interactionManager == null) return;
         int fireworkSlot = -1;
 
-        // 1. Önce hotbar'da (0-8) fişek ara
         for (int i = 0; i < 9; i++) {
             if (client.player.getInventory().getStack(i).isOf(Items.FIREWORK_ROCKET)) {
                 fireworkSlot = i;
@@ -503,7 +464,6 @@ public class AxoHileClient implements ClientModInitializer {
             }
         }
 
-        // 2. Hotbar'da yoksa envanterden (9-35) aktif seçili slota taşı
         if (fireworkSlot == -1) {
             for (int i = 9; i < 36; i++) {
                 if (client.player.getInventory().getStack(i).isOf(Items.FIREWORK_ROCKET)) {
@@ -515,7 +475,6 @@ public class AxoHileClient implements ClientModInitializer {
             }
         }
 
-        // 3. Fişek slotu bulunduysa sağ tıkla (interactItem)
         if (fireworkSlot != -1) {
             int oldSlot = client.player.getInventory().selectedSlot;
             client.player.getInventory().selectedSlot = fireworkSlot;
@@ -562,3 +521,4 @@ public class AxoHileClient implements ClientModInitializer {
         return value;
     }
 }
+
