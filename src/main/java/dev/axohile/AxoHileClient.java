@@ -80,6 +80,11 @@ public class AxoHileClient implements ClientModInitializer {
     private static int previousSlot = -1;                 
     private static int welcomeTimer = 0;
 
+    // Menünün çağırdığı ve eksik olan metot (Derleme hatasını çözer)
+    public static void saveOfflineAccounts() {
+        // İleride hesapları dosyaya kaydetmek için kullanılabilir
+    }
+
     @Override
     public void onInitializeClient() {
         menuKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
@@ -269,7 +274,6 @@ public class AxoHileClient implements ClientModInitializer {
         }
     }
 
-    // --- COOLDOWN VE ZIPLAMA %100 SENKRONİZE KUSURSUZ FULL HIT SİSTEMİ ---
     private static void runAdvancedCombat(MinecraftClient client) {
         if (client.player == null || client.interactionManager == null) return;
 
@@ -282,7 +286,6 @@ public class AxoHileClient implements ClientModInitializer {
                 trackTargetMovement(client.player, target);
             }
 
-            // Kalkan Kırma & Balta Yönetimi (Sadece slot seçer, vuruş yapmaz)
             boolean targetIsBlocking = target.isUsingItem() && target.getActiveItem().isOf(Items.SHIELD);
             if (targetIsBlocking && shieldBreakerAxeMode) {
                 for (int i = 0; i < 9; i++) {
@@ -298,13 +301,10 @@ public class AxoHileClient implements ClientModInitializer {
                 restorePreviousItem(client);
             }
 
-            // Full Hit ve Cooldown Mantığı
             if (fullHitEnabled) {
-                // Sadece yerdeyken VE cooldown tamamen dolduğunda zıpla
                 if (client.player.isOnGround() && client.player.getAttackCooldownProgress(0.5f) >= 0.98f) {
                     client.player.jump();
                 } 
-                // Havadayken (düşüşe geçtiğinde) ve cooldown doluyken %100 kusursuz kritik vuruş at
                 else if (!client.player.isOnGround() && client.player.fallDistance > 0.0f && client.player.getAttackCooldownProgress(0.5f) >= 0.98f) {
                     client.player.setSprinting(false);
                     client.interactionManager.attackEntity(client.player, target);
@@ -312,7 +312,6 @@ public class AxoHileClient implements ClientModInitializer {
                     restorePreviousItem(client);
                 }
             } else {
-                // Full Hit Kapalıyken: Normal yerde/havada cooldown dolduğunda düz vurur, asla spam yapmaz
                 if (client.player.getAttackCooldownProgress(0.5f) >= 0.98f) {
                     client.interactionManager.attackEntity(client.player, target);
                     client.player.swingHand(Hand.MAIN_HAND);
@@ -339,7 +338,6 @@ public class AxoHileClient implements ClientModInitializer {
         return closest;
     }
 
-    // --- 3D KÖŞELİ HEDEF KUTUSU (CORNER BOX ESP) ---
     private static void renderTargetIndicator(WorldRenderContext context, LivingEntity target, boolean inRange) {
         MinecraftClient client = MinecraftClient.getInstance();
         if (client.player == null || target == null) return;
@@ -424,7 +422,6 @@ public class AxoHileClient implements ClientModInitializer {
         }
     }
 
-    // --- ELYTRA TARGET & DÜZELTİLMİŞ FİŞEK BASMA SİSTEMİ (1.21.4 isGliding Uyumlu) ---
     private static void runElytraFlight(MinecraftClient client) {
         if (client.player == null || client.world == null || client.interactionManager == null) return;
 
@@ -521,4 +518,3 @@ public class AxoHileClient implements ClientModInitializer {
         return value;
     }
 }
-
