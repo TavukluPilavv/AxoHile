@@ -303,10 +303,13 @@ public class AxoHileClient implements ClientModInitializer {
             int chestplateSlot = -1;
             for (int i = 0; i < 36; i++) {
                 ItemStack stack = client.player.getInventory().getStack(i);
-                // 1.21.4 uyumlu getType() ve EquipmentSlot kontrolü
-                if (stack.getItem() instanceof ArmorItem armor && armor.getType() == ArmorItem.Type.CHESTPLATE) {
-                    chestplateSlot = i;
-                    break;
+                // 1.21.4 uyumlu güvenli göğüslük kontrolü (ArmorItem ve göğüs zırhı tespiti)
+                if (stack.getItem() instanceof ArmorItem armor) {
+                    String itemName = stack.getItem().toString().toLowerCase();
+                    if (itemName.contains("chestplate") || itemName.contains("tunic") || itemName.contains("jacket")) {
+                        chestplateSlot = i;
+                        break;
+                    }
                 }
             }
 
