@@ -1,0 +1,10 @@
+{
+  "welcome": {
+    "sounds": [
+      {
+        "name": "axohile:hos-geldiniz-beyefendi",
+        "stream": false
+      }
+    ]
+  }
+}

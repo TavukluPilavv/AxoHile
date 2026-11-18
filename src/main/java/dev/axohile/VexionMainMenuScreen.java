@@ -17,6 +17,7 @@ public final class VexionMainMenuScreen extends Screen {
 
     @Override
     protected void init() {
+        VexionWelcomeSound.playOnce();
         int buttonWidth = Math.min(230, Math.max(170, this.width / 4));
         int buttonHeight = 25;
         int x = this.width - buttonWidth - Math.max(28, this.width / 12);
