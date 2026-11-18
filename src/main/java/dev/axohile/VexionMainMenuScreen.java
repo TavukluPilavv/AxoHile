@@ -18,6 +18,7 @@ public final class VexionMainMenuScreen extends Screen {
     @Override
     protected void init() {
         VexionWelcomeSound.playOnce();
+
         int buttonWidth = Math.min(230, Math.max(170, this.width / 4));
         int buttonHeight = 25;
         int x = this.width - buttonWidth - Math.max(28, this.width / 12);
@@ -51,19 +52,33 @@ public final class VexionMainMenuScreen extends Screen {
 
     @Override
     public void render(DrawContext context, int mouseX, int mouseY, float delta) {
-        VexionBackgroundRenderer.render(context, this.width, this.height);
+        // Fotoğraf arka planı yok: sade, koyu ve renk vurgulu tasarım.
+        context.fill(0, 0, this.width, this.height, 0xFF10131F);
+        context.fill(0, 0, 7, this.height, 0xFF16D9E8);
+        context.fill(7, 0, 10, this.height, 0xFF8B5CFF);
 
-        int left = Math.max(28, this.width / 12);
-        int logoY = this.height / 2 - 86;
+        int left = Math.max(34, this.width / 14);
+        int logoY = this.height / 2 - 100;
 
-        // Neon parlama katmanları
-        context.drawText(this.textRenderer, "VC", left - 3, logoY - 5, 0x553A9CFF, true);
-        context.drawText(this.textRenderer, "VC", left - 2, logoY - 4, 0x9956B8FF, true);
-        context.drawText(this.textRenderer, "VC", left, logoY - 2, 0xFFBDEBFF, true);
-        context.drawText(this.textRenderer, "VEXION CLIENT", left + 2, logoY + 38, 0xFFE7F2FF, true);
-        context.drawText(this.textRenderer, "Minecraft 1.21.4", left + 2, logoY + 55, 0xFF91A9D4, true);
-        context.fill(left + 2, logoY + 73, left + 150, logoY + 75, 0xFF4D9DFF);
-        context.drawText(this.textRenderer, "CUSTOM CLIENT", left + 2, logoY + 88, 0xFF8298C4, true);
+        // Büyük, yan yana ve parlak VC logosu.
+        context.getMatrices().push();
+        context.getMatrices().translate(left, logoY, 0);
+        context.getMatrices().scale(4.0F, 4.0F, 1.0F);
+        context.drawText(this.textRenderer, "V", 0, 0, 0xFF27E6FF, true);
+        context.drawText(this.textRenderer, "C", 15, 0, 0xFFFF55D6, true);
+        context.getMatrices().pop();
+
+        // Sürüm ve o anki oyuncu adı.
+        context.drawText(this.textRenderer, "1.21.4",
+                left + 2, logoY + 48, 0xFFB8FF4D, true);
+
+        String playerName = MinecraftClient.getInstance().getSession().getUsername();
+        context.drawText(this.textRenderer, playerName,
+                left + 2, logoY + 68, 0xFFFFC857, true);
+
+        // Logo altındaki renkli vurgu çizgisi.
+        context.fill(left + 2, logoY + 88, left + 118, logoY + 91, 0xFF27E6FF);
+        context.fill(left + 118, logoY + 88, left + 166, logoY + 91, 0xFFFF55D6);
 
         super.render(context, mouseX, mouseY, delta);
     }
