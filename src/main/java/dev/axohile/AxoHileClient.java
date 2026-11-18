@@ -13,8 +13,10 @@ import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.util.InputUtil;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.ArmorItem;
 import net.minecraft.item.AxeItem;
 import net.minecraft.item.ItemStack;
 import net.minecraft.item.Items;
@@ -301,8 +303,8 @@ public class AxoHileClient implements ClientModInitializer {
             int chestplateSlot = -1;
             for (int i = 0; i < 36; i++) {
                 ItemStack stack = client.player.getInventory().getStack(i);
-                // 1.21.4 uyumlu zırh ve slot türü kontrolü
-                if (stack.getItem() instanceof net.minecraft.item.ArmorItem armor && armor.getSlotType() == net.minecraft.entity.EquipmentSlot.CHEST) {
+                // 1.21.4 uyumlu getType() ve EquipmentSlot kontrolü
+                if (stack.getItem() instanceof ArmorItem armor && armor.getType() == ArmorItem.Type.CHESTPLATE) {
                     chestplateSlot = i;
                     break;
                 }
