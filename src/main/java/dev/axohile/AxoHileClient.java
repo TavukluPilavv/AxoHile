@@ -48,7 +48,7 @@ public class AxoHileClient implements ClientModInitializer {
     public static boolean fullHitEnabled = false;         
     public static boolean shieldBreakerAxeMode = false;    
     public static String attackBypassType = "Vulcan";     
-    public static boolean triggerbotHitOnlyWhenJumping = false; // Sadece zıplarken mi vursun?
+    public static boolean triggerbotHitOnlyWhenJumping = false; 
 
     // --- ELYTRA TARGET & HELPER AYARLARI ---
     public static String elytraBypassType = "Vulcan";     
@@ -113,11 +113,9 @@ public class AxoHileClient implements ClientModInitializer {
                     elytraFlightEnabled = !elytraFlightEnabled;
                 }
 
-                // ElytraHelper Tuş Kontrolleri
                 if (elytraHelperEnabled) {
                     long window = client.getWindow().getHandle();
 
-                    // 1. Elytra Giy / Çıkar Tuşu
                     if (elytraHelperSwapKey != -1) {
                         boolean isPressed = GLFW.glfwGetKey(window, elytraHelperSwapKey) == GLFW.GLFW_PRESS;
                         if (isPressed && !lastSwapKeyState) {
@@ -126,7 +124,6 @@ public class AxoHileClient implements ClientModInitializer {
                         lastSwapKeyState = isPressed;
                     }
 
-                    // 2. Özel Fişek Basma Tuşu
                     if (elytraHelperFireworkKey != -1) {
                         boolean isPressed = GLFW.glfwGetKey(window, elytraHelperFireworkKey) == GLFW.GLFW_PRESS;
                         if (isPressed && !lastFireworkKeyState) {
@@ -276,15 +273,13 @@ public class AxoHileClient implements ClientModInitializer {
         });
     }
 
-    // --- ELYTRA HELPER: GİY / ÇIKAR MANTIĞI ---
     private static void toggleElytraAndChestplate(MinecraftClient client) {
         if (client.player == null || client.interactionManager == null) return;
 
-        ItemStack chestStack = client.player.getInventory().getArmorStack(2); // Göğüslük slotu (index 2)
+        ItemStack chestStack = client.player.getInventory().getArmorStack(2);
         boolean isElytraEquipped = chestStack.isOf(Items.ELYTRA);
 
         if (!isElytraEquipped) {
-            // Envanterde Elytra ara ve giy
             int elytraSlot = -1;
             for (int i = 0; i < 36; i++) {
                 if (client.player.getInventory().getStack(i).isOf(Items.ELYTRA)) {
@@ -303,11 +298,10 @@ public class AxoHileClient implements ClientModInitializer {
                 inventoryMessageTimer = 60;
             }
         } else {
-            // Üstünde Elytra var, normal göğüslük ile değiştir (Envanterde göğüslük arar)
             int chestplateSlot = -1;
             for (int i = 0; i < 36; i++) {
                 ItemStack stack = client.player.getInventory().getStack(i);
-                // Kask, bot ve pantolon harici giyilebilir zırhları (göğüslükleri) bul
+                // 1.21.4 uyumlu zırh ve slot türü kontrolü
                 if (stack.getItem() instanceof net.minecraft.item.ArmorItem armor && armor.getSlotType() == net.minecraft.entity.EquipmentSlot.CHEST) {
                     chestplateSlot = i;
                     break;
@@ -358,7 +352,6 @@ public class AxoHileClient implements ClientModInitializer {
         }
     }
 
-    // --- TRIGGERBOT & ATTACK AURA MANTIĞI (SPAMSIZ & SEÇENEKLİ) ---
     private static void runAdvancedCombat(MinecraftClient client) {
         if (client.player == null || client.interactionManager == null) return;
 
@@ -386,7 +379,6 @@ public class AxoHileClient implements ClientModInitializer {
                 restorePreviousItem(client);
             }
 
-            // Cooldown tam dolum kontrolü (Kesinlikle spam yapmaz, makro hissi yaratmaz)
             boolean isCooldownReady = client.player.getAttackCooldownProgress(0.5f) >= 0.90f;
 
             if (fullHitEnabled) {
@@ -395,10 +387,9 @@ public class AxoHileClient implements ClientModInitializer {
                         && !client.player.isClimbing() 
                         && !client.player.isTouchingWater();
 
-                // Eğer "Sadece Zıplarken Vur" aktifse ve şu an zıplamıyorsak/havada düşmüyorsak vurma
                 if (triggerbotHitOnlyWhenJumping && !isFalling && client.player.isOnGround()) {
                     if (isCooldownReady) {
-                        client.player.jump(); // Sadece zıplama tetikler
+                        client.player.jump();
                     }
                     return;
                 }
@@ -413,7 +404,6 @@ public class AxoHileClient implements ClientModInitializer {
                     restorePreviousItem(client);
                 }
             } else {
-                // Triggerbot kapalıyken (her zaman vurma modu): Zıplasa da zıplamasa da cooldown dolunca tek vuruş atar
                 if (!triggerbotHitOnlyHowShouldBe(triggerbotHitOnlyWhenJumping, client)) {
                     if (isCooldownReady) {
                         client.interactionManager.attackEntity(client.player, target);
