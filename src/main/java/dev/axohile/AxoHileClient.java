@@ -99,10 +99,10 @@ public class AxoHileClient implements ClientModInitializer {
             }
 
             if (client.player != null && client.currentScreen == null) {
-                if (attackAuraKey != -1 && GLFW.glfwGetKey(client.getWindow().getHandle(), attackAuraKey) == GLFW.GLFW_PRESS) {
+                if (attackAuraKey != -1 && GLFW.glfwGetKey(client.getWindow().getHandle(), attackAuraKey) == GLFW.glfw_PRESS) {
                     killauraEnabled = !killauraEnabled;
                 }
-                if (elytraKey != -1 && GLFW.glfwGetKey(client.getWindow().getHandle(), elytraKey) == GLFW.GLFW_PRESS) {
+                if (elytraKey != -1 && GLFW.glfwGetKey(client.getWindow().getHandle(), elytraKey) == GLFW.glfw_PRESS) {
                     elytraFlightEnabled = !elytraFlightEnabled;
                 }
             }
@@ -271,11 +271,13 @@ public class AxoHileClient implements ClientModInitializer {
         }
     }
 
+    // --- KUSURSUZ ZZIPLAMA, CRİT VE EKRAN SARSINTISI OLMAYAN COMBAT ---
     private static void runAdvancedCombat(MinecraftClient client) {
         if (client.player == null || client.interactionManager == null) return;
 
         LivingEntity target = getBestTarget(client, reach);
         if (target != null) {
+            // Ekranı kilitlemeden yumuşak odaklanma
             aimAtTargetSmooth(client.player, target, attackBypassType);
 
             boolean isWPressed = GLFW.glfwGetKey(client.getWindow().getHandle(), GLFW.GLFW_KEY_W) == GLFW.GLFW_PRESS;
@@ -298,24 +300,28 @@ public class AxoHileClient implements ClientModInitializer {
                 restorePreviousItem(client);
             }
 
-            boolean isCooldownReady = client.player.getAttackCooldownProgress(0.5f) >= 0.98f;
+            boolean isCooldownReady = client.player.getAttackCooldownProgress(0.5f) >= 0.90f;
 
             if (fullHitEnabled) {
-                boolean canCrit = !client.player.isOnGround() 
+                // Kritik vuruş için gerekli koşullar (havada ve aşağı düşerken)
+                boolean isFalling = !client.player.isOnGround() 
                         && client.player.fallDistance > 0.0f 
                         && !client.player.isClimbing() 
                         && !client.player.isTouchingWater();
 
+                // 1. Yerdeysek ve kılıç hazırsa otomatik zıpla
                 if (client.player.isOnGround() && isCooldownReady) {
                     client.player.jump();
                 } 
-                else if (canCrit && isCooldownReady) {
+                // 2. Havada düşüşteyiz ve vuruş süresi doldu -> Kritik Vuruşu Çak!
+                else if (isFalling && isCooldownReady) {
                     client.player.setSprinting(false);
                     client.interactionManager.attackEntity(client.player, target);
                     client.player.swingHand(Hand.MAIN_HAND);
                     restorePreviousItem(client);
                 }
             } else {
+                // Full Hit kapalıyken normal cooldown ile vurur
                 if (isCooldownReady) {
                     client.interactionManager.attackEntity(client.player, target);
                     client.player.swingHand(Hand.MAIN_HAND);
@@ -397,8 +403,8 @@ public class AxoHileClient implements ClientModInitializer {
         drawLine(matrix, buffer, minX, maxY, minZ, minX, maxY, minZ + dz, r, g, b, a);
 
         drawLine(matrix, buffer, maxX, maxY, minZ, maxX - dx, maxY, minZ, r, g, b, a);
-        drawLine(matrix, buffer, maxX, maxY, minZ, maxX, maxY - dy, minZ, r, g, b, a);
-        drawLine(matrix, buffer, maxX, maxY, minZ, maxX, maxY, minZ + dz, r, g, b, a);
+        drawLine(matrix, buffer, minX, maxY, minZ, maxX, maxY - dy, minZ, r, g, b, a);
+        drawLine(matrix, buffer, minX, maxY, minZ, maxX, maxY, minZ + dz, r, g, b, a);
 
         drawLine(matrix, buffer, minX, maxY, maxZ, minX + dx, maxY, maxZ, r, g, b, a);
         drawLine(matrix, buffer, minX, maxY, maxZ, minX, maxY - dy, maxZ, r, g, b, a);
@@ -496,7 +502,8 @@ public class AxoHileClient implements ClientModInitializer {
         float yawDelta = wrapDegrees(targetYaw - player.getYaw());
         float pitchDelta = targetPitch - player.getPitch();
 
-        float smoothing = bypass.equals("Grim") ? 0.15f : 0.25f;
+        // Ekranın kitlenmesini önleyen, fare hareketine izin veren hafif smoothing katsayısı
+        float smoothing = bypass.equals("Grim") ? 0.12f : 0.20f;
 
         player.setYaw(player.getYaw() + yawDelta * smoothing);
         player.setPitch(Math.max(-90.0f, Math.min(90.0f, player.getPitch() + pitchDelta * smoothing)));
