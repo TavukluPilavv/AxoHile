@@ -35,18 +35,22 @@ public class AxoHileClient implements ClientModInitializer {
     public static boolean killauraEnabled = false;
     public static boolean elytraFlightEnabled = false;
     public static boolean autoTotemEnabled = false;
+    public static boolean elytraHelperEnabled = false;
 
     // --- KEYBINDLER ---
     public static int attackAuraKey = -1;
     public static int elytraKey = -1;
+    public static int elytraHelperSwapKey = -1;
+    public static int elytraHelperFireworkKey = -1;
 
-    // --- ATTACK AURA AYARLARI ---
+    // --- ATTACK AURA & TRIGGERBOT AYARLARI ---
     public static double reach = 4.2;
     public static boolean fullHitEnabled = false;         
     public static boolean shieldBreakerAxeMode = false;    
     public static String attackBypassType = "Vulcan";     
+    public static boolean triggerbotHitOnlyWhenJumping = false; // Sadece zıplarken mi vursun?
 
-    // --- ELYTRA TARGET AYARLARI ---
+    // --- ELYTRA TARGET & HELPER AYARLARI ---
     public static String elytraBypassType = "Vulcan";     
     public static int autoFireworkSpeed = 5;              
     public static int elytraTargetRange = 100;            
@@ -70,17 +74,20 @@ public class AxoHileClient implements ClientModInitializer {
     private static int dragOffsetX = 0;
     private static int dragOffsetY = 0;
 
-    // --- MENÜNÜN HATA VERMEMESİ İÇİN GEREKLİ ALANLAR ---
+    // --- MESAJ & UYARI SİSTEMLERİ ---
+    public static String inventoryMessage = "";
+    private static int inventoryMessageTimer = 0;
+
     public static List<String> accountList = new ArrayList<>();
     public static String selectedAccount = "";
     public static String typedAccountInput = "";
 
-    public static void saveOfflineAccounts() {
-        // Hesap yöneticisi kalıntısı metot
-    }
+    public static void saveOfflineAccounts() {}
 
     private static int previousSlot = -1;                 
     private static int welcomeTimer = 0;
+    private static boolean lastSwapKeyState = false;
+    private static boolean lastFireworkKeyState = false;
 
     @Override
     public void onInitializeClient() {
@@ -99,16 +106,40 @@ public class AxoHileClient implements ClientModInitializer {
             }
 
             if (client.player != null && client.currentScreen == null) {
-                if (attackAuraKey != -1 && GLFW.glfwGetKey(client.getWindow().getHandle(), attackAuraKey) == GLFW.glfw_PRESS) {
+                if (attackAuraKey != -1 && GLFW.glfwGetKey(client.getWindow().getHandle(), attackAuraKey) == GLFW.GLFW_PRESS) {
                     killauraEnabled = !killauraEnabled;
                 }
-                if (elytraKey != -1 && GLFW.glfwGetKey(client.getWindow().getHandle(), elytraKey) == GLFW.glfw_PRESS) {
+                if (elytraKey != -1 && GLFW.glfwGetKey(client.getWindow().getHandle(), elytraKey) == GLFW.GLFW_PRESS) {
                     elytraFlightEnabled = !elytraFlightEnabled;
+                }
+
+                // ElytraHelper Tuş Kontrolleri
+                if (elytraHelperEnabled) {
+                    long window = client.getWindow().getHandle();
+
+                    // 1. Elytra Giy / Çıkar Tuşu
+                    if (elytraHelperSwapKey != -1) {
+                        boolean isPressed = GLFW.glfwGetKey(window, elytraHelperSwapKey) == GLFW.GLFW_PRESS;
+                        if (isPressed && !lastSwapKeyState) {
+                            toggleElytraAndChestplate(client);
+                        }
+                        lastSwapKeyState = isPressed;
+                    }
+
+                    // 2. Özel Fişek Basma Tuşu
+                    if (elytraHelperFireworkKey != -1) {
+                        boolean isPressed = GLFW.glfwGetKey(window, elytraHelperFireworkKey) == GLFW.GLFW_PRESS;
+                        if (isPressed && !lastFireworkKeyState) {
+                            useFireworkAnywhere(client);
+                        }
+                        lastFireworkKeyState = isPressed;
+                    }
                 }
             }
 
             if (client.player != null && client.world != null) {
                 if (welcomeTimer < 100) welcomeTimer++;
+                if (inventoryMessageTimer > 0) inventoryMessageTimer--;
 
                 if (autoTotemEnabled) {
                     runAutoTotem(client);
@@ -125,6 +156,12 @@ public class AxoHileClient implements ClientModInitializer {
         HudRenderCallback.EVENT.register((context, tickDelta) -> {
             MinecraftClient client = MinecraftClient.getInstance();
             if (client.player == null || client.options.hudHidden) return;
+
+            if (inventoryMessageTimer > 0 && !inventoryMessage.isEmpty()) {
+                int sw = client.getWindow().getScaledWidth();
+                int sh = client.getWindow().getScaledHeight();
+                context.drawCenteredTextWithShadow(client.textRenderer, inventoryMessage, sw / 2, sh / 2 + 40, 0xFFFF5555);
+            }
 
             if (welcomeTimer < 80) {
                 int sw = client.getWindow().getScaledWidth();
@@ -239,6 +276,56 @@ public class AxoHileClient implements ClientModInitializer {
         });
     }
 
+    // --- ELYTRA HELPER: GİY / ÇIKAR MANTIĞI ---
+    private static void toggleElytraAndChestplate(MinecraftClient client) {
+        if (client.player == null || client.interactionManager == null) return;
+
+        ItemStack chestStack = client.player.getInventory().getArmorStack(2); // Göğüslük slotu (index 2)
+        boolean isElytraEquipped = chestStack.isOf(Items.ELYTRA);
+
+        if (!isElytraEquipped) {
+            // Envanterde Elytra ara ve giy
+            int elytraSlot = -1;
+            for (int i = 0; i < 36; i++) {
+                if (client.player.getInventory().getStack(i).isOf(Items.ELYTRA)) {
+                    elytraSlot = i;
+                    break;
+                }
+            }
+
+            if (elytraSlot != -1) {
+                int slotId = elytraSlot < 9 ? elytraSlot + 36 : elytraSlot;
+                client.interactionManager.clickSlot(client.player.playerScreenHandler.syncId, slotId, 0, SlotActionType.PICKUP, client.player);
+                client.interactionManager.clickSlot(client.player.playerScreenHandler.syncId, 6, 0, SlotActionType.PICKUP, client.player);
+                client.interactionManager.clickSlot(client.player.playerScreenHandler.syncId, slotId, 0, SlotActionType.PICKUP, client.player);
+            } else {
+                inventoryMessage = "VexionClient: Envanterinizde Elytra yok !";
+                inventoryMessageTimer = 60;
+            }
+        } else {
+            // Üstünde Elytra var, normal göğüslük ile değiştir (Envanterde göğüslük arar)
+            int chestplateSlot = -1;
+            for (int i = 0; i < 36; i++) {
+                ItemStack stack = client.player.getInventory().getStack(i);
+                // Kask, bot ve pantolon harici giyilebilir zırhları (göğüslükleri) bul
+                if (stack.getItem() instanceof net.minecraft.item.ArmorItem armor && armor.getSlotType() == net.minecraft.entity.EquipmentSlot.CHEST) {
+                    chestplateSlot = i;
+                    break;
+                }
+            }
+
+            if (chestplateSlot != -1) {
+                int slotId = chestplateSlot < 9 ? chestplateSlot + 36 : chestplateSlot;
+                client.interactionManager.clickSlot(client.player.playerScreenHandler.syncId, slotId, 0, SlotActionType.PICKUP, client.player);
+                client.interactionManager.clickSlot(client.player.playerScreenHandler.syncId, 6, 0, SlotActionType.PICKUP, client.player);
+                client.interactionManager.clickSlot(client.player.playerScreenHandler.syncId, slotId, 0, SlotActionType.PICKUP, client.player);
+            } else {
+                inventoryMessage = "VexionClient: Envanterinizde göğüslük yok !";
+                inventoryMessageTimer = 60;
+            }
+        }
+    }
+
     private static void runAutoTotem(MinecraftClient client) {
         if (client.player == null || client.interactionManager == null) return;
         
@@ -271,13 +358,12 @@ public class AxoHileClient implements ClientModInitializer {
         }
     }
 
-    // --- KUSURSUZ ZZIPLAMA, CRİT VE EKRAN SARSINTISI OLMAYAN COMBAT ---
+    // --- TRIGGERBOT & ATTACK AURA MANTIĞI (SPAMSIZ & SEÇENEKLİ) ---
     private static void runAdvancedCombat(MinecraftClient client) {
         if (client.player == null || client.interactionManager == null) return;
 
         LivingEntity target = getBestTarget(client, reach);
         if (target != null) {
-            // Ekranı kilitlemeden yumuşak odaklanma
             aimAtTargetSmooth(client.player, target, attackBypassType);
 
             boolean isWPressed = GLFW.glfwGetKey(client.getWindow().getHandle(), GLFW.GLFW_KEY_W) == GLFW.GLFW_PRESS;
@@ -300,20 +386,26 @@ public class AxoHileClient implements ClientModInitializer {
                 restorePreviousItem(client);
             }
 
+            // Cooldown tam dolum kontrolü (Kesinlikle spam yapmaz, makro hissi yaratmaz)
             boolean isCooldownReady = client.player.getAttackCooldownProgress(0.5f) >= 0.90f;
 
             if (fullHitEnabled) {
-                // Kritik vuruş için gerekli koşullar (havada ve aşağı düşerken)
                 boolean isFalling = !client.player.isOnGround() 
                         && client.player.fallDistance > 0.0f 
                         && !client.player.isClimbing() 
                         && !client.player.isTouchingWater();
 
-                // 1. Yerdeysek ve kılıç hazırsa otomatik zıpla
+                // Eğer "Sadece Zıplarken Vur" aktifse ve şu an zıplamıyorsak/havada düşmüyorsak vurma
+                if (triggerbotHitOnlyWhenJumping && !isFalling && client.player.isOnGround()) {
+                    if (isCooldownReady) {
+                        client.player.jump(); // Sadece zıplama tetikler
+                    }
+                    return;
+                }
+
                 if (client.player.isOnGround() && isCooldownReady) {
                     client.player.jump();
                 } 
-                // 2. Havada düşüşteyiz ve vuruş süresi doldu -> Kritik Vuruşu Çak!
                 else if (isFalling && isCooldownReady) {
                     client.player.setSprinting(false);
                     client.interactionManager.attackEntity(client.player, target);
@@ -321,16 +413,23 @@ public class AxoHileClient implements ClientModInitializer {
                     restorePreviousItem(client);
                 }
             } else {
-                // Full Hit kapalıyken normal cooldown ile vurur
-                if (isCooldownReady) {
-                    client.interactionManager.attackEntity(client.player, target);
-                    client.player.swingHand(Hand.MAIN_HAND);
-                    restorePreviousItem(client);
+                // Triggerbot kapalıyken (her zaman vurma modu): Zıplasa da zıplamasa da cooldown dolunca tek vuruş atar
+                if (!triggerbotHitOnlyHowShouldBe(triggerbotHitOnlyWhenJumping, client)) {
+                    if (isCooldownReady) {
+                        client.interactionManager.attackEntity(client.player, target);
+                        client.player.swingHand(Hand.MAIN_HAND);
+                        restorePreviousItem(client);
+                    }
                 }
             }
         } else {
             restorePreviousItem(client);
         }
+    }
+
+    private static boolean triggerbotHitOnlyHowShouldBe(boolean onlyJump, MinecraftClient client) {
+        if (onlyJump && client.player.isOnGround()) return true;
+        return false;
     }
 
     private static LivingEntity getBestTarget(MinecraftClient client, double range) {
@@ -403,8 +502,8 @@ public class AxoHileClient implements ClientModInitializer {
         drawLine(matrix, buffer, minX, maxY, minZ, minX, maxY, minZ + dz, r, g, b, a);
 
         drawLine(matrix, buffer, maxX, maxY, minZ, maxX - dx, maxY, minZ, r, g, b, a);
-        drawLine(matrix, buffer, minX, maxY, minZ, maxX, maxY - dy, minZ, r, g, b, a);
-        drawLine(matrix, buffer, minX, maxY, minZ, maxX, maxY, minZ + dz, r, g, b, a);
+        drawLine(matrix, buffer, maxX, maxY, minZ, maxX, maxY - dy, minZ, r, g, b, a);
+        drawLine(matrix, buffer, maxX, maxY, minZ, maxX, maxY, minZ + dz, r, g, b, a);
 
         drawLine(matrix, buffer, minX, maxY, maxZ, minX + dx, maxY, maxZ, r, g, b, a);
         drawLine(matrix, buffer, minX, maxY, maxZ, minX, maxY - dy, maxZ, r, g, b, a);
@@ -456,7 +555,7 @@ public class AxoHileClient implements ClientModInitializer {
         }
     }
 
-    private static void useFireworkAnywhere(MinecraftClient client) {
+    public static void useFireworkAnywhere(MinecraftClient client) {
         if (client.player == null || client.interactionManager == null) return;
         int fireworkSlot = -1;
 
@@ -502,7 +601,6 @@ public class AxoHileClient implements ClientModInitializer {
         float yawDelta = wrapDegrees(targetYaw - player.getYaw());
         float pitchDelta = targetPitch - player.getPitch();
 
-        // Ekranın kitlenmesini önleyen, fare hareketine izin veren hafif smoothing katsayısı
         float smoothing = bypass.equals("Grim") ? 0.12f : 0.20f;
 
         player.setYaw(player.getYaw() + yawDelta * smoothing);
