@@ -13,7 +13,6 @@ import net.minecraft.client.render.VertexConsumer;
 import net.minecraft.client.render.VertexConsumerProvider;
 import net.minecraft.client.util.InputUtil;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.ArmorItem;
@@ -45,12 +44,17 @@ public class AxoHileClient implements ClientModInitializer {
     public static int elytraHelperSwapKey = -1;
     public static int elytraHelperFireworkKey = -1;
 
-    // --- ATTACK AURA & TRIGGERBOT AYARLARI ---
+    // --- ATTACK AURA & COMBAT AYARLARI ---
     public static double reach = 4.2;
-    public static boolean fullHitEnabled = false;         
+    public static boolean criticalHitEnabled = false;      // Ayrı Critical Hit ayarı
+    public static boolean fullHitEnabled = false;          // Ayrı Full Hit (otomatik zıplama) ayarı
     public static boolean shieldBreakerAxeMode = false;    
     public static String attackBypassType = "Vulcan";     
     public static boolean triggerbotHitOnlyWhenJumping = false; 
+
+    // --- TARGET LOCK & SERBEST KAMERA AYARLARI ---
+    public static boolean targetLockEnabled = true;        // Target Lock açık/kapalı
+    public static boolean freeCameraEnabled = false;       // Serbest Kamera (ekranı serbestçe döndürme) ayarı
 
     // --- ELYTRA TARGET & HELPER AYARLARI ---
     public static String elytraBypassType = "Vulcan";     
@@ -303,8 +307,7 @@ public class AxoHileClient implements ClientModInitializer {
             int chestplateSlot = -1;
             for (int i = 0; i < 36; i++) {
                 ItemStack stack = client.player.getInventory().getStack(i);
-                // 1.21.4 uyumlu güvenli göğüslük kontrolü (ArmorItem ve göğüs zırhı tespiti)
-                if (stack.getItem() instanceof ArmorItem armor) {
+                if (stack.getItem() instanceof ArmorItem) {
                     String itemName = stack.getItem().toString().toLowerCase();
                     if (itemName.contains("chestplate") || itemName.contains("tunic") || itemName.contains("jacket")) {
                         chestplateSlot = i;
@@ -362,10 +365,13 @@ public class AxoHileClient implements ClientModInitializer {
 
         LivingEntity target = getBestTarget(client, reach);
         if (target != null) {
-            aimAtTargetSmooth(client.player, target, attackBypassType);
+            // Target Lock aktifse yumuşak odaklanma, Serbest Kamera aktifse kamera kilidi tamamen devre dışı
+            if (targetLockEnabled && !freeCameraEnabled) {
+                aimAtTargetSmooth(client.player, target, attackBypassType);
+            }
 
             boolean isWPressed = GLFW.glfwGetKey(client.getWindow().getHandle(), GLFW.GLFW_KEY_W) == GLFW.GLFW_PRESS;
-            if (isWPressed) {
+            if (isWPressed && targetLockEnabled && !freeCameraEnabled) {
                 trackTargetMovement(client.player, target);
             }
 
@@ -386,35 +392,31 @@ public class AxoHileClient implements ClientModInitializer {
 
             boolean isCooldownReady = client.player.getAttackCooldownProgress(0.5f) >= 0.90f;
 
+            // --- FULL HIT VE CRITICAL HIT AYRI AYRI YÖNETİMİ ---
+            boolean isFalling = !client.player.isOnGround() 
+                    && client.player.fallDistance > 0.0f 
+                    && !client.player.isClimbing() 
+                    && !client.player.isTouchingWater();
+
             if (fullHitEnabled) {
-                boolean isFalling = !client.player.isOnGround() 
-                        && client.player.fallDistance > 0.0f 
-                        && !client.player.isClimbing() 
-                        && !client.player.isTouchingWater();
-
-                if (triggerbotHitOnlyWhenJumping && !isFalling && client.player.isOnGround()) {
-                    if (isCooldownReady) {
-                        client.player.jump();
-                    }
-                    return;
-                }
-
+                // Full Hit açık: Karakter kendi kendine zıplar ve düşerken vurur
                 if (client.player.isOnGround() && isCooldownReady) {
                     client.player.jump();
-                } 
-                else if (isFalling && isCooldownReady) {
-                    client.player.setSprinting(false);
-                    client.interactionManager.attackEntity(client.player, target);
-                    client.player.swingHand(Hand.MAIN_HAND);
-                    restorePreviousItem(client);
+                } else if (isFalling && isCooldownReady) {
+                    executeAttack(client, target);
+                }
+            } else if (criticalHitEnabled) {
+                // Sadece Critical Hit açık (otomatik zıplama yok, sadece havada düşerken crit vurur)
+                if (isFalling && isCooldownReady) {
+                    executeAttack(client, target);
                 }
             } else {
-                if (!triggerbotHitOnlyHowShouldBe(triggerbotHitOnlyWhenJumping, client)) {
-                    if (isCooldownReady) {
-                        client.interactionManager.attackEntity(client.player, target);
-                        client.player.swingHand(Hand.MAIN_HAND);
-                        restorePreviousItem(client);
-                    }
+                // Normal / Triggerbot Modu
+                if (triggerbotHitOnlyWhenJumping && client.player.isOnGround()) {
+                    return; 
+                }
+                if (isCooldownReady) {
+                    executeAttack(client, target);
                 }
             }
         } else {
@@ -422,9 +424,11 @@ public class AxoHileClient implements ClientModInitializer {
         }
     }
 
-    private static boolean triggerbotHitOnlyHowShouldBe(boolean onlyJump, MinecraftClient client) {
-        if (onlyJump && client.player.isOnGround()) return true;
-        return false;
+    private static void executeAttack(MinecraftClient client, LivingEntity target) {
+        client.player.setSprinting(false);
+        client.interactionManager.attackEntity(client.player, target);
+        client.player.swingHand(Hand.MAIN_HAND);
+        restorePreviousItem(client);
     }
 
     private static LivingEntity getBestTarget(MinecraftClient client, double range) {
@@ -540,7 +544,7 @@ public class AxoHileClient implements ClientModInitializer {
             }
         }
 
-        if (target != null) {
+        if (target != null && targetLockEnabled && !freeCameraEnabled) {
             aimAtTargetSmooth(client.player, target, elytraBypassType);
         }
 
