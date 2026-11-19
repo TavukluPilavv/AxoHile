@@ -48,7 +48,7 @@ public class AxoHileClient implements ClientModInitializer {
 
     // --- ATTACK AURA, TRIGGERBOT & COMBAT AYARLARI ---
     public static double reach = 4.2;
-    public static double hitSpeed = 5.5;                  // 0.0 - 10.0 arası (0.2 adım), 5.5 = Tam Hit
+    public static double hitSpeed = 5.5;                  // 0.0 - 10.0 arası (0.1 adım), 5.5 = Tam Hit
     public static boolean criticalHitEnabled = false;
     public static boolean fullHitEnabled = false;
     public static boolean shieldBreakerAxeMode = false;
@@ -100,6 +100,9 @@ public class AxoHileClient implements ClientModInitializer {
     private static int hitTickCooldown = 0;
     private static float orbitAngle = 0.0f;
     private static boolean fullHitJumpingPhase = false;
+    private static float lockedTargetYaw = 0.0f;
+    private static float lockedTargetPitch = 0.0f;
+    private static boolean hasLockedRotation = false;
 
     @Override
     public void onInitializeClient() {
@@ -164,6 +167,13 @@ public class AxoHileClient implements ClientModInitializer {
                     runAdvancedCombat(client);
                 } else {
                     fullHitJumpingPhase = false;
+                    hasLockedRotation = false;
+                }
+
+                // F5 görünümünde hedef kilitliyse kafa/gövde rotasyonunu hedefe sabitle
+                if (hasLockedRotation && targetLockEnabled && !client.options.getPerspective().isFirstPerson()) {
+                    client.player.setHeadYaw(lockedTargetYaw);
+                    client.player.setBodyYaw(lockedTargetYaw);
                 }
             }
         });
@@ -296,80 +306,98 @@ public class AxoHileClient implements ClientModInitializer {
         });
     }
 
-    private static float getRequiredCooldownThreshold() {
-        // 0.0 -> 1.15 (daha uzun bekleme), 5.5 -> 0.98 (Tam Hit), 10.0 -> 0.50 (hızlı vuruş)
-        if (Math.abs(hitSpeed - 5.5) < 0.02) {
-            return 0.98f;
-        }
+    private static float getCooldownThresholdForHitSpeed() {
+        // 0.0 -> 1.15 (daha geç), 5.5 -> 0.96 (Tam Hit), 10.0 -> 0.35 (çok seri)
         double delta = hitSpeed - 5.5;
-        float threshold = (float) (0.98 - (delta * 0.095));
-        return Math.max(0.45f, Math.min(1.20f, threshold));
+        float threshold = (float) (0.96 - (delta * 0.061));
+        return Math.max(0.35f, Math.min(1.15f, threshold));
     }
 
-    private static int getExtraCooldownTicks() {
-        // Düşük hitSpeed değerlerinde ek bekleme tick'i ekler
-        if (hitSpeed >= 5.5) {
+    private static int getTickIntervalForHitSpeed() {
+        // 0.0 ile 10.0 arası her 0.1 adımda net farklılık üretir (5.5 -> 0 ek bekleme, 0.0 -> 20 tick, 10.0 -> 0 tick)
+        if (Math.abs(hitSpeed - 5.5) < 0.05) {
             return 0;
         }
-        double slowFactor = (5.5 - hitSpeed) / 0.2; // 0.2 adımlık kademe sayısı
-        return Math.max(0, (int) Math.round(slowFactor * 1.2));
+        if (hitSpeed < 5.5) {
+            double stepsBelow = (5.5 - hitSpeed) / 0.1;
+            return Math.max(1, (int) Math.round(stepsBelow * 0.36));
+        } else {
+            return 0;
+        }
     }
 
     private static boolean canPerformCritical(PlayerEntity player) {
         return !player.isOnGround()
-                && player.getVelocity().y < -0.04
-                && player.fallDistance > 0.03f
+                && player.getVelocity().y < -0.015
+                && player.fallDistance > 0.01f
                 && !player.isClimbing()
                 && !player.isTouchingWater()
                 && !player.hasVehicle()
                 && !player.isGliding();
     }
 
-    private static void applyTargetOrbitAndChestAim(MinecraftClient client, LivingEntity target) {
+    private static void applyTargetLockWithoutInsideTrap(MinecraftClient client, LivingEntity target) {
         PlayerEntity player = client.player;
         if (player == null || target == null) return;
 
-        // Hedefin göğüs hizasına odaklan ve etrafında 360° / içinden geçip çıkacak şekilde orbit uygula
-        orbitAngle += 0.28f;
-        if (orbitAngle > 360.0f) orbitAngle -= 360.0f;
-
-        Vec3d targetChest = target.getPos().add(0, target.getHeight() * 0.55, 0);
-        double rad = Math.toRadians(orbitAngle);
-        // Hedefin içine girip çıkacak dinamik yarıçap (0.0 ile 0.85 blok arası)
-        double radius = 0.42 * (1.0 + Math.sin(rad * 2.0));
-        double desiredX = target.getX() + Math.cos(rad) * radius;
-        double desiredZ = target.getZ() + Math.sin(rad) * radius;
-
-        // Sadece targetLockEnabled açıkken ve yatay/dikey konum yaklaşımı isteniyorsa yumuşak kaydır
-        double moveFactor = attackBypassType.equals("Grim") ? 0.14 : 0.22;
-        double nextX = player.getX() + (desiredX - player.getX()) * moveFactor;
-        double nextZ = player.getZ() + (desiredZ - player.getZ()) * moveFactor;
-        player.setPosition(nextX, player.getY(), nextZ);
-
+        Vec3d targetCenter = target.getPos().add(0, target.getHeight() * 0.55, 0);
         Vec3d eyes = player.getEyePos();
-        double diffX = targetChest.x - eyes.x;
-        double diffY = targetChest.y - eyes.y;
-        double diffZ = targetChest.z - eyes.z;
+
+        double diffX = targetCenter.x - eyes.x;
+        double diffY = targetCenter.y - eyes.y;
+        double diffZ = targetCenter.z - eyes.z;
         double horizDist = Math.sqrt(diffX * diffX + diffZ * diffZ);
 
         float targetYaw = (float) (Math.atan2(diffZ, diffX) * (180.0 / Math.PI)) - 90.0F;
         float targetPitch = (float) -(Math.atan2(diffY, horizDist) * (180.0 / Math.PI));
 
-        // 1. şahısta serbest kamera açıkken kamerayı kilitleme; kullanıcı ekranı serbestçe çevirsin
+        lockedTargetYaw = targetYaw;
+        lockedTargetPitch = Math.max(-90.0f, Math.min(90.0f, targetPitch));
+        hasLockedRotation = true;
+
+        // Hedefin içine girip sıkışmamak için güvenli mesafede (yaklaşık 1.45 - 2.15 blok) yumuşak yörünge/yaklaşma
+        orbitAngle += 0.14f;
+        if (orbitAngle > 360.0f) orbitAngle -= 360.0f;
+
+        double distToTarget = player.distanceTo(target);
+        if (distToTarget > 2.2) {
+            double rad = Math.toRadians(orbitAngle);
+            double desiredX = target.getX() + Math.cos(rad) * 1.65;
+            double desiredZ = target.getZ() + Math.sin(rad) * 1.65;
+            double step = attackBypassType.equals("Grim") ? 0.09 : 0.14;
+            player.setPosition(
+                player.getX() + (desiredX - player.getX()) * step,
+                player.getY(),
+                player.getZ() + (desiredZ - player.getZ()) * step
+            );
+        } else if (distToTarget < 1.15) {
+            // Hedefin içine girmeyi engellemek için hafifçe geri/yana açıl
+            Vec3d away = player.getPos().subtract(target.getPos());
+            double len = Math.sqrt(away.x * away.x + away.z * away.z);
+            if (len > 0.001) {
+                double pushX = (away.x / len) * 0.08;
+                double pushZ = (away.z / len) * 0.08;
+                player.setPosition(player.getX() + pushX, player.getY(), player.getZ() + pushZ);
+            }
+        }
+
         boolean isFirstPerson = client.options.getPerspective().isFirstPerson();
         if (freeCameraEnabled && isFirstPerson) {
-            // Hedefe bakış açısını gövde/kafa yönüne yumuşak yansıt ama kamera (player yaw/pitch) kullanıcıda kalsın
-            player.setBodyYaw(targetYaw);
-            player.setHeadYaw(targetYaw);
+            // 1. şahısta serbest kamera açıkken kamera oyuncunun parmak/ekran hareketinde kalsın;
+            // F5 görünümünde ise kafa/gövde rotasyonu hedefe dönsün
+            player.setHeadYaw(lockedTargetYaw);
+            player.setBodyYaw(lockedTargetYaw);
             return;
         }
 
-        float yawDelta = wrapDegrees(targetYaw - player.getYaw());
-        float pitchDelta = targetPitch - player.getPitch();
-        float smoothing = attackBypassType.equals("Grim") ? 0.22f : 0.35f;
+        float yawDelta = wrapDegrees(lockedTargetYaw - player.getYaw());
+        float pitchDelta = lockedTargetPitch - player.getPitch();
+        float smoothing = attackBypassType.equals("Grim") ? 0.20f : 0.32f;
 
         player.setYaw(player.getYaw() + yawDelta * smoothing);
         player.setPitch(Math.max(-90.0f, Math.min(90.0f, player.getPitch() + pitchDelta * smoothing)));
+        player.setHeadYaw(player.getYaw());
+        player.setBodyYaw(player.getYaw());
     }
 
     private static void toggleElytraAndChestplate(MinecraftClient client) {
@@ -460,11 +488,12 @@ public class AxoHileClient implements ClientModInitializer {
         if (target == null) {
             restorePreviousItem(client);
             fullHitJumpingPhase = false;
+            hasLockedRotation = false;
             return;
         }
 
         if (targetLockEnabled) {
-            applyTargetOrbitAndChestAim(client, target);
+            applyTargetLockWithoutInsideTrap(client, target);
         }
 
         boolean targetIsBlocking = target.isUsingItem() && target.getActiveItem().isOf(Items.SHIELD);
@@ -482,21 +511,22 @@ public class AxoHileClient implements ClientModInitializer {
             restorePreviousItem(client);
         }
 
-        float requiredCooldown = getRequiredCooldownThreshold();
-        boolean isCooldownReady = client.player.getAttackCooldownProgress(0.5f) >= requiredCooldown && hitTickCooldown <= 0;
+        float threshold = getCooldownThresholdForHitSpeed();
+        float cooldownProgress = client.player.getAttackCooldownProgress(0.5f);
+        boolean cooldownPassed = (hitSpeed >= 5.5) ? (cooldownProgress >= Math.min(1.0f, threshold)) : (cooldownProgress >= 0.92f && hitTickCooldown <= 0);
         boolean isFallingCrit = canPerformCritical(client.player);
-        boolean onlyJumpMode = triggerbotHitOnlyWhenJumping || (triggerbotEnabled && !killauraEnabled);
+        boolean onlyJumpMode = triggerbotHitOnlyWhenJumping;
 
         if (fullHitEnabled) {
-            if (client.player.isOnGround() && isCooldownReady && !fullHitJumpingPhase) {
+            if (client.player.isOnGround() && cooldownPassed && !fullHitJumpingPhase) {
                 client.player.jump();
                 fullHitJumpingPhase = true;
                 return;
             }
-            if (isFallingCrit && isCooldownReady) {
+            if (isFallingCrit && cooldownPassed) {
                 executeAttack(client, target);
                 fullHitJumpingPhase = false;
-            } else if (client.player.isOnGround() && !isCooldownReady) {
+            } else if (client.player.isOnGround() && hitTickCooldown <= 0 && cooldownProgress >= 1.0f) {
                 fullHitJumpingPhase = false;
             }
             return;
@@ -505,30 +535,43 @@ public class AxoHileClient implements ClientModInitializer {
         fullHitJumpingPhase = false;
 
         if (criticalHitEnabled) {
-            if (onlyJumpMode && client.player.isOnGround() && isCooldownReady) {
-                client.player.jump();
-                return;
-            }
-            if (isFallingCrit && isCooldownReady) {
+            // Critical Hit açıkken: zıpladığında düşüşte otomatik kritik vuruş yap; yerdeyken zıplamıyorsa vurma
+            if (isFallingCrit && cooldownPassed) {
                 executeAttack(client, target);
+            }
+            return;
+        }
+
+        if (triggerbotEnabled && !killauraEnabled) {
+            if (onlyJumpMode) {
+                // Sadece zıplarken: yerdeyken zıplayıp düşerken tam kritik vuruş yap
+                if (client.player.isOnGround() && cooldownPassed) {
+                    client.player.jump();
+                    return;
+                }
+                if (isFallingCrit && cooldownPassed) {
+                    executeAttack(client, target);
+                }
+            } else {
+                // "Zıplamadan da" açıkken: yerdeyken de zıplıyormuş gibi vuruş yap, havadayken de kritik vur
+                if (isFallingCrit && cooldownPassed) {
+                    executeAttack(client, target);
+                } else if (client.player.isOnGround() && cooldownPassed) {
+                    executeAttack(client, target);
+                }
             }
             return;
         }
 
         if (onlyJumpMode) {
-            if (client.player.isOnGround()) {
-                if (triggerbotEnabled && isCooldownReady) {
-                    client.player.jump();
-                }
-                return;
-            }
-            if (isFallingCrit && isCooldownReady) {
+            if (isFallingCrit && cooldownPassed) {
                 executeAttack(client, target);
             }
             return;
         }
 
-        if (isCooldownReady) {
+        // Normal AttackAura: yerdeyken zıplamadan, hitSpeed ayarına göre düzenli vuruş yapar
+        if (cooldownPassed) {
             executeAttack(client, target);
         }
     }
@@ -537,7 +580,7 @@ public class AxoHileClient implements ClientModInitializer {
         client.player.setSprinting(false);
         client.interactionManager.attackEntity(client.player, target);
         client.player.swingHand(Hand.MAIN_HAND);
-        hitTickCooldown = getExtraCooldownTicks();
+        hitTickCooldown = getTickIntervalForHitSpeed();
         restorePreviousItem(client);
     }
 
@@ -707,19 +750,25 @@ public class AxoHileClient implements ClientModInitializer {
         float targetYaw = (float) (Math.atan2(diffZ, diffX) * (180 / Math.PI)) - 90.0F;
         float targetPitch = (float) -(Math.atan2(diffY, dist) * (180 / Math.PI));
 
+        lockedTargetYaw = targetYaw;
+        lockedTargetPitch = Math.max(-90.0f, Math.min(90.0f, targetPitch));
+        hasLockedRotation = true;
+
         if (freeCameraEnabled && client.options.getPerspective().isFirstPerson()) {
-            player.setBodyYaw(targetYaw);
-            player.setHeadYaw(targetYaw);
+            player.setBodyYaw(lockedTargetYaw);
+            player.setHeadYaw(lockedTargetYaw);
             return;
         }
 
-        float yawDelta = wrapDegrees(targetYaw - player.getYaw());
-        float pitchDelta = targetPitch - player.getPitch();
+        float yawDelta = wrapDegrees(lockedTargetYaw - player.getYaw());
+        float pitchDelta = lockedTargetPitch - player.getPitch();
 
         float smoothing = bypass.equals("Grim") ? 0.14f : 0.24f;
 
         player.setYaw(player.getYaw() + yawDelta * smoothing);
         player.setPitch(Math.max(-90.0f, Math.min(90.0f, player.getPitch() + pitchDelta * smoothing)));
+        player.setHeadYaw(player.getYaw());
+        player.setBodyYaw(player.getYaw());
     }
 
     private static float wrapDegrees(float value) {
