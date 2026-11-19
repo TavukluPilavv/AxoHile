@@ -196,7 +196,7 @@ public class AxoHileMenuScreen extends Screen {
     }
 
     private void cycleHitSpeed() {
-        double next = Math.round((AxoHileClient.hitSpeed + 0.2) * 10.0) / 10.0;
+        double next = Math.round((AxoHileClient.hitSpeed + 0.1) * 10.0) / 10.0;
         if (next > 10.0) {
             next = 0.0;
         }
