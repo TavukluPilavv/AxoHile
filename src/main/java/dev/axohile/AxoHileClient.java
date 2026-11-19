@@ -34,27 +34,30 @@ public class AxoHileClient implements ClientModInitializer {
     
     // --- HİLELER ---
     public static boolean killauraEnabled = false;
+    public static boolean triggerbotEnabled = false;
     public static boolean elytraFlightEnabled = false;
     public static boolean autoTotemEnabled = false;
     public static boolean elytraHelperEnabled = false;
 
     // --- KEYBINDLER ---
     public static int attackAuraKey = -1;
+    public static int triggerbotKey = -1;
     public static int elytraKey = -1;
     public static int elytraHelperSwapKey = -1;
     public static int elytraHelperFireworkKey = -1;
 
-    // --- ATTACK AURA & COMBAT AYARLARI ---
+    // --- ATTACK AURA, TRIGGERBOT & COMBAT AYARLARI ---
     public static double reach = 4.2;
-    public static boolean criticalHitEnabled = false;      // Ayrı Critical Hit ayarı
-    public static boolean fullHitEnabled = false;          // Ayrı Full Hit (otomatik zıplama) ayarı
+    public static double hitSpeed = 5.5;                  // 0.0 - 10.0 arası (0.2 adım), 5.5 = Tam Hit
+    public static boolean criticalHitEnabled = false;      
+    public static boolean fullHitEnabled = false;          
     public static boolean shieldBreakerAxeMode = false;    
     public static String attackBypassType = "Vulcan";     
     public static boolean triggerbotHitOnlyWhenJumping = false; 
 
     // --- TARGET LOCK & SERBEST KAMERA AYARLARI ---
-    public static boolean targetLockEnabled = true;        // Target Lock açık/kapalı
-    public static boolean freeCameraEnabled = false;       // Serbest Kamera (ekranı serbestçe döndürme) ayarı
+    public static boolean targetLockEnabled = true;        
+    public static boolean freeCameraEnabled = false;       
 
     // --- ELYTRA TARGET & HELPER AYARLARI ---
     public static String elytraBypassType = "Vulcan";     
@@ -112,16 +115,19 @@ public class AxoHileClient implements ClientModInitializer {
             }
 
             if (client.player != null && client.currentScreen == null) {
-                if (attackAuraKey != -1 && GLFW.glfwGetKey(client.getWindow().getHandle(), attackAuraKey) == GLFW.GLFW_PRESS) {
+                long window = client.getWindow().getHandle();
+
+                if (attackAuraKey != -1 && GLFW.glfwGetKey(window, attackAuraKey) == GLFW.GLFW_PRESS) {
                     killauraEnabled = !killauraEnabled;
                 }
-                if (elytraKey != -1 && GLFW.glfwGetKey(client.getWindow().getHandle(), elytraKey) == GLFW.GLFW_PRESS) {
+                if (triggerbotKey != -1 && GLFW.glfwGetKey(window, triggerbotKey) == GLFW.GLFW_PRESS) {
+                    triggerbotEnabled = !triggerbotEnabled;
+                }
+                if (elytraKey != -1 && GLFW.glfwGetKey(window, elytraKey) == GLFW.GLFW_PRESS) {
                     elytraFlightEnabled = !elytraFlightEnabled;
                 }
 
                 if (elytraHelperEnabled) {
-                    long window = client.getWindow().getHandle();
-
                     if (elytraHelperSwapKey != -1) {
                         boolean isPressed = GLFW.glfwGetKey(window, elytraHelperSwapKey) == GLFW.GLFW_PRESS;
                         if (isPressed && !lastSwapKeyState) {
@@ -150,7 +156,7 @@ public class AxoHileClient implements ClientModInitializer {
                 if (elytraFlightEnabled) {
                     runElytraFlight(client);
                 }
-                if (killauraEnabled) {
+                if (killauraEnabled || triggerbotEnabled) {
                     runAdvancedCombat(client);
                 }
             }
@@ -204,21 +210,26 @@ public class AxoHileClient implements ClientModInitializer {
                 y += 44;
             }
 
-            boolean hasKeybinds = (killauraEnabled && attackAuraKey != -1) || (elytraFlightEnabled && elytraKey != -1);
+            boolean hasKeybinds = (killauraEnabled && attackAuraKey != -1) || (triggerbotEnabled && triggerbotKey != -1) || (elytraFlightEnabled && elytraKey != -1);
             if (hudKeybinds && hasKeybinds) {
-                context.fill(x, y, x + 160, y + 45, 0x90000000);
+                context.fill(x, y, x + 160, y + 58, 0x90000000);
                 context.drawTextWithShadow(client.textRenderer, "⌨️ Keybinds", x + 6, y + 6, 0xFFAAAAAA);
                 int kbY = y + 20;
                 if (killauraEnabled && attackAuraKey != -1) {
                     context.drawTextWithShadow(client.textRenderer, "§fAttackAura", x + 10, kbY, 0xFFFFFF);
                     context.drawTextWithShadow(client.textRenderer, "[" + GLFW.glfwGetKeyName(attackAuraKey, 0) + "]", x + 110, kbY, 0x55FF55);
-                    kbY += 14;
+                    kbY += 12;
+                }
+                if (triggerbotEnabled && triggerbotKey != -1) {
+                    context.drawTextWithShadow(client.textRenderer, "§fTriggerbot", x + 10, kbY, 0xFFFFFF);
+                    context.drawTextWithShadow(client.textRenderer, "[" + GLFW.glfwGetKeyName(triggerbotKey, 0) + "]", x + 110, kbY, 0x55FF55);
+                    kbY += 12;
                 }
                 if (elytraFlightEnabled && elytraKey != -1) {
                     context.drawTextWithShadow(client.textRenderer, "§fElytraTarget", x + 10, kbY, 0xFFFFFF);
                     context.drawTextWithShadow(client.textRenderer, "[" + GLFW.glfwGetKeyName(elytraKey, 0) + "]", x + 110, kbY, 0x55FF55);
                 }
-                y += 50;
+                y += 64;
             }
 
             if (hudStaffList) {
@@ -269,7 +280,7 @@ public class AxoHileClient implements ClientModInitializer {
 
         WorldRenderEvents.LAST.register(context -> {
             MinecraftClient client = MinecraftClient.getInstance();
-            if (client.player != null && client.world != null && killauraEnabled) {
+            if (client.player != null && client.world != null && (killauraEnabled || triggerbotEnabled)) {
                 LivingEntity target = getBestTarget(client, reach);
                 if (target != null) {
                     boolean inRange = client.player.distanceTo(target) <= reach;
@@ -277,6 +288,13 @@ public class AxoHileClient implements ClientModInitializer {
                 }
             }
         });
+    }
+
+    private static float getRequiredCooldownThreshold() {
+        // 5.5 -> 1.00f (Tam Hit). 0.0 -> 1.20f (daha geç/temkinli), 10.0 -> 0.55f (daha hızlı)
+        double diffFromCenter = hitSpeed - 5.5;
+        float threshold = (float) (1.00 - (diffFromCenter * 0.045));
+        return Math.max(0.50f, Math.min(1.25f, threshold));
     }
 
     private static void toggleElytraAndChestplate(MinecraftClient client) {
@@ -365,7 +383,6 @@ public class AxoHileClient implements ClientModInitializer {
 
         LivingEntity target = getBestTarget(client, reach);
         if (target != null) {
-            // Target Lock aktifse yumuşak odaklanma, Serbest Kamera aktifse kamera kilidi tamamen devre dışı
             if (targetLockEnabled && !freeCameraEnabled) {
                 aimAtTargetSmooth(client.player, target, attackBypassType);
             }
@@ -390,30 +407,29 @@ public class AxoHileClient implements ClientModInitializer {
                 restorePreviousItem(client);
             }
 
-            boolean isCooldownReady = client.player.getAttackCooldownProgress(0.5f) >= 0.90f;
+            float requiredCooldown = getRequiredCooldownThreshold();
+            boolean isCooldownReady = client.player.getAttackCooldownProgress(0.5f) >= requiredCooldown;
 
-            // --- FULL HIT VE CRITICAL HIT AYRI AYRI YÖNETİMİ ---
             boolean isFalling = !client.player.isOnGround() 
                     && client.player.fallDistance > 0.0f 
                     && !client.player.isClimbing() 
                     && !client.player.isTouchingWater();
 
+            boolean onlyJumpActive = triggerbotHitOnlyWhenJumping || (triggerbotEnabled && !killauraEnabled);
+
             if (fullHitEnabled) {
-                // Full Hit açık: Karakter kendi kendine zıplar ve düşerken vurur
                 if (client.player.isOnGround() && isCooldownReady) {
                     client.player.jump();
                 } else if (isFalling && isCooldownReady) {
                     executeAttack(client, target);
                 }
             } else if (criticalHitEnabled) {
-                // Sadece Critical Hit açık (otomatik zıplama yok, sadece havada düşerken crit vurur)
                 if (isFalling && isCooldownReady) {
                     executeAttack(client, target);
                 }
             } else {
-                // Normal / Triggerbot Modu
-                if (triggerbotHitOnlyWhenJumping && client.player.isOnGround()) {
-                    return; 
+                if (onlyJumpActive && client.player.isOnGround()) {
+                    return;
                 }
                 if (isCooldownReady) {
                     executeAttack(client, target);
